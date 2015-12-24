@@ -53,10 +53,8 @@ impl Parser {
     }
 
     fn peek(&self, t: TokenType) -> bool {
-        match self.tokens[self.index] {
-            Token::EmptyToken(ref t2) => t == *t2,
-            Token::ValuedToken(ref t2, _) => t == *t2,
-        }
+        let token = &self.tokens[self.index];
+        token.typ == t
     }
 
     fn eat(&mut self, t: TokenType) -> Result<(), Error> {
@@ -70,19 +68,18 @@ impl Parser {
     }
 
     fn eat_lexeme(&mut self, t: TokenType) -> Result<String, Error> {
-        let r =
-            match self.tokens[self.index] {
-                Token::EmptyToken(_) => Err(Error::GenericError),
-                Token::ValuedToken(ref t2, ref lexeme) => {
-                    if t == *t2 {
-                        self.index += 1;
-                        Ok(lexeme.clone())
-                    } else {
-                        Err(Error::GenericError)
-                    }
+        let token = &self.tokens[self.index];
+        if token.typ == t {
+            match token.lexeme {
+                Some(ref lexeme) => {
+                    self.index += 1;
+                    Ok(lexeme.clone())
                 }
-            };
-        r
+                None => Err(Error::GenericError)
+            }
+        } else {
+            Err(Error::GenericError)
+        }
     }
 
     fn eat_type(&mut self) -> Result<Type, Error> {

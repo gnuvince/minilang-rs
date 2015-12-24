@@ -16,13 +16,20 @@ fn main() {
 
     loop {
         match scanner.next_token() {
-            Ok(Token::EmptyToken(TokenType::Eof)) => { tokens.push(Token::EmptyToken(TokenType::Eof)); break; }
-            Ok(tok) => { tokens.push(tok); }
+            Ok(tok) => {
+                let is_eof = tok.typ == TokenType::Eof;
+                tokens.push(tok);
+                if is_eof {
+                    break;
+                }
+            }
             Err(e) => { println!("Error: {:?}", e); return; }
         }
     }
 
-    println!("{:?}", tokens);
+    for tok in tokens.iter() {
+        println!("{:?}", tok);
+    }
 
     let mut parser = Parser::new(tokens);
     let program = parser.parse_program();

@@ -38,9 +38,9 @@ pub enum TokenType {
 }
 
 #[derive(Debug)]
-pub enum Token {
-    EmptyToken(TokenType),
-    ValuedToken(TokenType, String),
+pub struct Token {
+    pub typ: TokenType,
+    pub lexeme: Option<String>,
 }
 
 pub struct Scanner {
@@ -188,9 +188,15 @@ fn is_id_char(c: char) -> bool {
 }
 
 fn empty_tok(t: TokenType) -> Token {
-    Token::EmptyToken(t)
+    Token {
+        typ: t,
+        lexeme: None,
+    }
 }
 
 fn valued_tok(t: TokenType, v: String) -> Token {
-    Token::ValuedToken(t, v)
+    Token {
+        typ: t,
+        lexeme: Some(v),
+    }
 }
