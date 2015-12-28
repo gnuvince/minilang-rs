@@ -1,0 +1,34 @@
+(* Regular expressions *)
+lower-case     = "a" | "b" | ... | "y" | "z" .
+upper-case     = "A" | "B" | ... | "Y" | "Z" .
+digit          = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" .
+non-zero-digit = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" .
+
+id             = (lower-case | upper-case | "_") { (lower-case | upper-case | "_" | digit) } .
+int_literal    = "0" | non-zero-digit { digit } .
+float_literal  = int_literal "." { digit } .
+
+
+(* Context-free grammar *)
+program     = { declaration } { statement } .
+
+declaration = "var" id ":" type ";" .
+
+type        = "int"
+            | "float" .
+
+statement   = id "=" expression ";"
+            | "print" expression ";"
+            | "read" id ";"
+            | "if" expression "then" { statement } ["else" { statement } ] "endif"
+            | "while" expression "do" { statement } "done" .
+
+expression  = expression "+" expression
+            | expression "-" expression
+            | expression "*" expression
+            | expression "/" expression
+            | "(" expression ")"
+            | "-" expression
+            | id
+            | int_literal
+            | float_literal .
