@@ -68,15 +68,15 @@ impl Scanner {
 
         // Scanning dispatch.
         match self.peek() {
-            '+' => { self.advance(); Ok(self.empty_tok(TokenType::Plus)) }
-            '-' => { self.advance(); Ok(self.empty_tok(TokenType::Minus)) }
-            '*' => { self.advance(); Ok(self.empty_tok(TokenType::Star)) }
-            '/' => { self.advance(); Ok(self.empty_tok(TokenType::Slash)) }
-            '=' => { self.advance(); Ok(self.empty_tok(TokenType::Equal)) }
-            '(' => { self.advance(); Ok(self.empty_tok(TokenType::LParen)) }
-            ')' => { self.advance(); Ok(self.empty_tok(TokenType::RParen)) }
-            ':' => { self.advance(); Ok(self.empty_tok(TokenType::Colon)) }
-            ';' => { self.advance(); Ok(self.empty_tok(TokenType::Semicolon)) }
+            '+' => { Ok(self.single_char_tok(TokenType::Plus)) }
+            '-' => { Ok(self.single_char_tok(TokenType::Minus)) }
+            '*' => { Ok(self.single_char_tok(TokenType::Star)) }
+            '/' => { Ok(self.single_char_tok(TokenType::Slash)) }
+            '=' => { Ok(self.single_char_tok(TokenType::Equal)) }
+            '(' => { Ok(self.single_char_tok(TokenType::LParen)) }
+            ')' => { Ok(self.single_char_tok(TokenType::RParen)) }
+            ':' => { Ok(self.single_char_tok(TokenType::Colon)) }
+            ';' => { Ok(self.single_char_tok(TokenType::Semicolon)) }
             c if c.is_digit(10) => { self.scan_int_or_float() }
             c if is_id_start(c) => { self.scan_id_or_keyword() }
             c   => { Err(Error::IllegalCharacter(self.curr_pos, c)) }
@@ -150,7 +150,7 @@ impl Scanner {
         }
     }
 
-    fn empty_tok(&mut self, t: TokenType) -> Token {
+    fn empty_tok(&self, t: TokenType) -> Token {
         let t = Token {
             typ: t,
             lexeme: None,
@@ -159,12 +159,18 @@ impl Scanner {
         t
     }
 
-    fn valued_tok(&mut self, t: TokenType, v: String) -> Token {
+    fn valued_tok(&self, t: TokenType, v: String) -> Token {
         let t = Token {
             typ: t,
             lexeme: Some(v),
             pos: self.start_pos,
         };
+        t
+    }
+
+    fn single_char_tok(&mut self, t: TokenType) -> Token {
+        let t = self.empty_tok(t);
+        self.advance();
         t
     }
 }

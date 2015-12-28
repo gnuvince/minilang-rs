@@ -101,6 +101,8 @@ impl Parser {
     pub fn parse_program(&mut self) -> Result<Program, Error> {
         let decls = try!(self.parse_decls());
         let stmts = try!(self.parse_stmts());
+        try!(self.eat(TokenType::Eof));
+
         Ok(Program {
             decls: decls,
             stmts: stmts,
@@ -132,7 +134,6 @@ impl Parser {
             let stmt = try!(self.parse_stmt());
             stmts.push(stmt);
         }
-        try!(self.eat(TokenType::Eof));
         Ok(stmts)
     }
 
