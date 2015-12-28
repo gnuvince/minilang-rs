@@ -54,12 +54,19 @@ impl Scanner {
 
 
     pub fn next_token(&mut self) -> Result<Token, Error> {
+        // Discard blanks and comments.
         self.skip_comments_and_whitespace();
 
+        // Set start_pos (starting position of the next token) to the
+        // value of curr_pos (current position in the text stream).
+        self.start_pos = self.curr_pos;
+
+        // Return Eof if the end of the file has been reached.
         if self.is_eof() {
             return Ok(self.empty_tok(TokenType::Eof));
         }
 
+        // Scanning dispatch.
         match self.peek() {
             '+' => { self.advance(); Ok(self.empty_tok(TokenType::Plus)) }
             '-' => { self.advance(); Ok(self.empty_tok(TokenType::Minus)) }
@@ -76,6 +83,7 @@ impl Scanner {
         }
     }
 
+    // Scan digits into an Int or Float token.
     fn scan_int_or_float(&mut self) -> Result<Token, Error> {
         let mut val = String::new();
         while self.peek().is_digit(10) {
@@ -95,6 +103,7 @@ impl Scanner {
         Ok(self.valued_tok(TokenType::Float, val))
     }
 
+    // Scan alpha-numeric characters into an Id or a keyword token.
     fn scan_id_or_keyword(&mut self) -> Result<Token, Error> {
         let mut lexeme = String::new();
         while is_id_char(self.peek()) {
@@ -147,7 +156,6 @@ impl Scanner {
             lexeme: None,
             pos: self.start_pos,
         };
-        self.start_pos = self.curr_pos;
         t
     }
 
@@ -157,7 +165,6 @@ impl Scanner {
             lexeme: Some(v),
             pos: self.start_pos,
         };
-        self.start_pos = self.curr_pos;
         t
     }
 }
