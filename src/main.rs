@@ -1,9 +1,11 @@
 mod error;
-mod scanner;
 mod pos;
+mod token;
+mod scanner;
 mod parser;
 
-use scanner::{Scanner, Token, TokenType};
+use token::{Token, TokenType};
+use scanner::Scanner;
 use parser::Parser;
 use std::io::{Read, stdin};
 

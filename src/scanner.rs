@@ -1,47 +1,5 @@
-use ::error::Error;
-use ::pos::Pos;
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum TokenType {
-    // Values
-    Int,
-    Float,
-    Id,
-
-    // Punctuation and operators
-    Plus,
-    Minus,
-    Star,
-    Slash,
-    Equal,
-    LParen,
-    RParen,
-    Colon,
-    Semicolon,
-
-    // Keywords
-    If,
-    Then,
-    Else,
-    End,
-    While,
-    Do,
-    Done,
-    Read,
-    Print,
-    Var,
-    TypeInt,
-    TypeFloat,
-
-    // Others
-    Eof,
-}
-
-#[derive(Debug)]
-pub struct Token {
-    pub typ: TokenType,
-    pub lexeme: Option<String>,
-}
+use error::Error;
+use token::{Token, TokenType};
 
 pub struct Scanner {
     data: String,
@@ -103,7 +61,7 @@ impl Scanner {
             ';' => { self.advance(); Ok(empty_tok(TokenType::Semicolon)) }
             c if c.is_digit(10) => { self.scan_int_or_float() }
             c if is_id_start(c) => { self.scan_id_or_keyword() }
-            c   => { Err(Error::GenericError) }
+            c   => { Err(Error::IllegalCharacter(c)) }
         }
     }
 

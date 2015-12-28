@@ -1,4 +1,4 @@
-use scanner::{Token, TokenType};
+use token::{Token, TokenType};
 use error::Error;
 
 #[derive(Debug)]
@@ -57,13 +57,17 @@ impl Parser {
         token.typ == t
     }
 
+    fn get_token_type(&self) -> TokenType {
+        self.tokens[self.index].typ
+    }
+
     fn eat(&mut self, t: TokenType) -> Result<(), Error> {
         let b = self.peek(t);
         if b {
             self.index += 1;
             Ok(())
         } else {
-            Err(Error::GenericError)
+            Err(Error::UnexpectedToken(self.get_token_type(), t))
         }
     }
 
@@ -75,10 +79,10 @@ impl Parser {
                     self.index += 1;
                     Ok(lexeme.clone())
                 }
-                None => Err(Error::GenericError)
+                None => Err(Error::UnexpectedToken(self.get_token_type(), t))
             }
         } else {
-            Err(Error::GenericError)
+            Err(Error::UnexpectedToken(self.get_token_type(), t))
         }
     }
 
