@@ -1,10 +1,10 @@
 use pos::Pos;
-use token::TokenType;
+use token::{Token, TokenType};
 
 #[derive(Debug)]
 pub enum Error {
     GenericError,
-    IllegalCharacter(char),
+    IllegalCharacter(Pos, char),
 
-    UnexpectedToken(TokenType, TokenType)
+    UnexpectedToken(Token, TokenType)
 }

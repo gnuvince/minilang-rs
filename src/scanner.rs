@@ -1,9 +1,12 @@
 use error::Error;
+use pos::Pos;
 use token::{Token, TokenType};
 
 pub struct Scanner {
     data: String,
     index: usize,
+    start_pos: Pos,
+    curr_pos: Pos,
 }
 
 impl Scanner {
@@ -13,6 +16,8 @@ impl Scanner {
         Scanner {
             data: data,
             index: 0,
+            start_pos: Pos { line: 1, col: 1 },
+            curr_pos: Pos { line: 1, col: 1 },
         }
     }
 
@@ -31,6 +36,12 @@ impl Scanner {
         if !self.is_eof() {
             self.index += 1;
         }
+        if c == '\n' {
+            self.curr_pos.line += 1;
+            self.curr_pos.col = 1;
+        } else {
+            self.curr_pos.col += 1
+        }
         c
     }
 
@@ -46,22 +57,22 @@ impl Scanner {
         self.skip_comments_and_whitespace();
 
         if self.is_eof() {
-            return Ok(empty_tok(TokenType::Eof));
+            return Ok(self.empty_tok(TokenType::Eof));
         }
 
         match self.peek() {
-            '+' => { self.advance(); Ok(empty_tok(TokenType::Plus)) }
-            '-' => { self.advance(); Ok(empty_tok(TokenType::Minus)) }
-            '*' => { self.advance(); Ok(empty_tok(TokenType::Star)) }
-            '/' => { self.advance(); Ok(empty_tok(TokenType::Slash)) }
-            '=' => { self.advance(); Ok(empty_tok(TokenType::Equal)) }
-            '(' => { self.advance(); Ok(empty_tok(TokenType::LParen)) }
-            ')' => { self.advance(); Ok(empty_tok(TokenType::RParen)) }
-            ':' => { self.advance(); Ok(empty_tok(TokenType::Colon)) }
-            ';' => { self.advance(); Ok(empty_tok(TokenType::Semicolon)) }
+            '+' => { self.advance(); Ok(self.empty_tok(TokenType::Plus)) }
+            '-' => { self.advance(); Ok(self.empty_tok(TokenType::Minus)) }
+            '*' => { self.advance(); Ok(self.empty_tok(TokenType::Star)) }
+            '/' => { self.advance(); Ok(self.empty_tok(TokenType::Slash)) }
+            '=' => { self.advance(); Ok(self.empty_tok(TokenType::Equal)) }
+            '(' => { self.advance(); Ok(self.empty_tok(TokenType::LParen)) }
+            ')' => { self.advance(); Ok(self.empty_tok(TokenType::RParen)) }
+            ':' => { self.advance(); Ok(self.empty_tok(TokenType::Colon)) }
+            ';' => { self.advance(); Ok(self.empty_tok(TokenType::Semicolon)) }
             c if c.is_digit(10) => { self.scan_int_or_float() }
             c if is_id_start(c) => { self.scan_id_or_keyword() }
-            c   => { Err(Error::IllegalCharacter(c)) }
+            c   => { Err(Error::IllegalCharacter(self.curr_pos, c)) }
         }
     }
 
@@ -72,7 +83,7 @@ impl Scanner {
         }
 
         if self.peek() != '.' {
-            return Ok(valued_tok(TokenType::Int, val));
+            return Ok(self.valued_tok(TokenType::Int, val));
         }
 
         val.push(self.advance()); // Add decimal point.
@@ -81,7 +92,7 @@ impl Scanner {
             val.push(self.advance());
         }
 
-        Ok(valued_tok(TokenType::Float, val))
+        Ok(self.valued_tok(TokenType::Float, val))
     }
 
     fn scan_id_or_keyword(&mut self) -> Result<Token, Error> {
@@ -90,20 +101,20 @@ impl Scanner {
             lexeme.push(self.advance());
         }
 
-        if lexeme == "if" { return Ok(empty_tok(TokenType::If)); }
-        if lexeme == "then" { return Ok(empty_tok(TokenType::Then)); }
-        if lexeme == "else" { return Ok(empty_tok(TokenType::Else)); }
-        if lexeme == "end" { return Ok(empty_tok(TokenType::End)); }
-        if lexeme == "while" { return Ok(empty_tok(TokenType::While)); }
-        if lexeme == "do" { return Ok(empty_tok(TokenType::Do)); }
-        if lexeme == "done" { return Ok(empty_tok(TokenType::Done)); }
-        if lexeme == "read" { return Ok(empty_tok(TokenType::Read)); }
-        if lexeme == "print" { return Ok(empty_tok(TokenType::Print)); }
-        if lexeme == "var" { return Ok(empty_tok(TokenType::Var)); }
-        if lexeme == "int" { return Ok(empty_tok(TokenType::TypeInt)); }
-        if lexeme == "float" { return Ok(empty_tok(TokenType::TypeFloat)); }
+        if lexeme == "if" { return Ok(self.empty_tok(TokenType::If)); }
+        if lexeme == "then" { return Ok(self.empty_tok(TokenType::Then)); }
+        if lexeme == "else" { return Ok(self.empty_tok(TokenType::Else)); }
+        if lexeme == "end" { return Ok(self.empty_tok(TokenType::End)); }
+        if lexeme == "while" { return Ok(self.empty_tok(TokenType::While)); }
+        if lexeme == "do" { return Ok(self.empty_tok(TokenType::Do)); }
+        if lexeme == "done" { return Ok(self.empty_tok(TokenType::Done)); }
+        if lexeme == "read" { return Ok(self.empty_tok(TokenType::Read)); }
+        if lexeme == "print" { return Ok(self.empty_tok(TokenType::Print)); }
+        if lexeme == "var" { return Ok(self.empty_tok(TokenType::Var)); }
+        if lexeme == "int" { return Ok(self.empty_tok(TokenType::TypeInt)); }
+        if lexeme == "float" { return Ok(self.empty_tok(TokenType::TypeFloat)); }
 
-        Ok(valued_tok(TokenType::Id, lexeme))
+        Ok(self.valued_tok(TokenType::Id, lexeme))
     }
 
 
@@ -129,6 +140,26 @@ impl Scanner {
             self.advance();
         }
     }
+
+    fn empty_tok(&mut self, t: TokenType) -> Token {
+        let t = Token {
+            typ: t,
+            lexeme: None,
+            pos: self.start_pos,
+        };
+        self.start_pos = self.curr_pos;
+        t
+    }
+
+    fn valued_tok(&mut self, t: TokenType, v: String) -> Token {
+        let t = Token {
+            typ: t,
+            lexeme: Some(v),
+            pos: self.start_pos,
+        };
+        self.start_pos = self.curr_pos;
+        t
+    }
 }
 
 fn is_id_start(c: char) -> bool {
@@ -143,18 +174,4 @@ fn is_id_char(c: char) -> bool {
     c == '_' ||
     c.is_digit(10) ||
     (c >= 'A' && c <= 'Z')
-}
-
-fn empty_tok(t: TokenType) -> Token {
-    Token {
-        typ: t,
-        lexeme: None,
-    }
-}
-
-fn valued_tok(t: TokenType, v: String) -> Token {
-    Token {
-        typ: t,
-        lexeme: Some(v),
-    }
 }

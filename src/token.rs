@@ -1,4 +1,4 @@
-use ::pos::Pos;
+use pos::Pos;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenType {
@@ -36,8 +36,9 @@ pub enum TokenType {
     Eof,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Token {
     pub typ: TokenType,
     pub lexeme: Option<String>,
+    pub pos: Pos,
 }

@@ -57,8 +57,8 @@ impl Parser {
         token.typ == t
     }
 
-    fn get_token_type(&self) -> TokenType {
-        self.tokens[self.index].typ
+    fn curr_token(&self) -> Token {
+        self.tokens[self.index].clone()
     }
 
     fn eat(&mut self, t: TokenType) -> Result<(), Error> {
@@ -67,7 +67,7 @@ impl Parser {
             self.index += 1;
             Ok(())
         } else {
-            Err(Error::UnexpectedToken(self.get_token_type(), t))
+            Err(Error::UnexpectedToken(self.curr_token(), t))
         }
     }
 
@@ -79,10 +79,10 @@ impl Parser {
                     self.index += 1;
                     Ok(lexeme.clone())
                 }
-                None => Err(Error::UnexpectedToken(self.get_token_type(), t))
+                None => Err(Error::UnexpectedToken(self.curr_token(), t))
             }
         } else {
-            Err(Error::UnexpectedToken(self.get_token_type(), t))
+            Err(Error::UnexpectedToken(self.curr_token(), t))
         }
     }
 
@@ -132,6 +132,7 @@ impl Parser {
             let stmt = try!(self.parse_stmt());
             stmts.push(stmt);
         }
+        try!(self.eat(TokenType::Eof));
         Ok(stmts)
     }
 
