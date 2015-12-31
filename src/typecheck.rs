@@ -53,13 +53,14 @@ fn tc_stmt(stmt: &Stmt, symtable: &mut Symtable) -> Result<(), Error> {
 
 fn tc_stmt_assign(id: &String, expr: &Expr, symtable: &mut Symtable) -> Result<(), Error> {
     let expr_id = Expr::Id(id.clone());
-    let t = try!(tc_expr(expr, symtable));
+    let expr_ty = try!(tc_expr(expr, symtable));
     match symtable.get(&expr_id) {
-        Some(&ty) => {
-            if t == ty {
-                Ok(())
-            } else {
-                Err(Error::GenericError)
+        Some(&id_ty) => {
+            match (id_ty, expr_ty) {
+                (Type::Int, Type::Int) => Ok(()),
+                (Type::Int, Type::Float) => Err(Error::GenericError),
+                (Type::Float, Type::Int) => Ok(()),
+                (Type::Float, Type::Float) => Ok(()),
             }
         }
         None => Err(Error::GenericError)
