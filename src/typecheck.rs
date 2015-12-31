@@ -4,167 +4,180 @@ use parser::{Program, Decl, Stmt, Expr};
 use types::Type;
 use error::Error;
 
-type Symtable = HashMap<String, Type>;
+pub type Symtable = HashMap<String, Type>;
+pub type Exprtable = HashMap<Expr, Type>;
 
-pub fn tc_program(p: &Program) -> Result<(), Error> {
-    let mut init_symtable = try!(tc_decls(&p.decls));
-    tc_stmts(&p.stmts, &mut init_symtable)
+pub struct TypeChecker {
+    pub symtable: Symtable,
+    pub expr_table: Exprtable,
 }
 
-fn tc_decls(decls: &Vec<Decl>) -> Result<Symtable, Error> {
-    let mut symtable: Symtable = HashMap::new();
-    for decl in decls {
-        try!(tc_decl(&decl, &mut symtable));
+impl TypeChecker {
+    pub fn new() -> Self {
+        TypeChecker {
+            symtable: HashMap::new(),
+            expr_table: HashMap::new(),
+        }
     }
-    println!("{:?}", symtable);
-    Ok(symtable)
-}
 
-fn tc_decl(decl: &Decl, symtable: &mut Symtable) -> Result<(), Error> {
-    if symtable.contains_key(&decl.id) {
-        return Err(Error::GenericError);
-    } else {
-        symtable.insert(decl.id.clone(), decl.ty);
+    pub fn tc_program(&mut self, p: &Program) -> Result<(), Error> {
+        try!(self.tc_decls(&p.decls));
+        self.tc_stmts(&p.stmts)
+    }
+
+    fn tc_decls(&mut self, decls: &Vec<Decl>) -> Result<(), Error> {
+        for decl in decls {
+            try!(self.tc_decl(&decl));
+        }
         Ok(())
     }
-}
 
-fn tc_stmts(stmts: &Vec<Stmt>, symtable: &mut Symtable) -> Result<(), Error> {
-    for stmt in stmts {
-        try!(tc_stmt(&stmt, symtable));
-    }
-    Ok(())
-}
-
-fn tc_stmt(stmt: &Stmt, symtable: &mut Symtable) -> Result<(), Error> {
-    match *stmt {
-        Stmt::Assign { .. } => tc_stmt_assign(stmt, symtable),
-        Stmt::Read { .. } => tc_stmt_read(stmt, symtable),
-        Stmt::Print { .. } => tc_stmt_print(stmt, symtable),
-        Stmt::If { .. } => tc_stmt_if(stmt, symtable),
-        Stmt::While { .. } => tc_stmt_while(stmt, symtable),
-    }
-}
-
-fn tc_stmt_assign(stmt: &Stmt, symtable: &mut Symtable) -> Result<(), Error> {
-    if let Stmt::Assign { pos, ref id, ref expr } = *stmt {
-        let expr_ty = try!(tc_expr(expr, symtable));
-        match symtable.get(id) {
-            Some(&id_ty) => {
-                match (id_ty, expr_ty) {
-                    (Type::Int, Type::Int) => Ok(()),
-                    (Type::Int, Type::Float) =>
-                        Err(Error::UnexpectedType { pos: pos, expected: Type::Int, actual: Type::Float }),
-                    (Type::Float, Type::Int) => Ok(()),
-                    (Type::Float, Type::Float) => Ok(()),
-                }
-            }
-            None => Err(Error::UndeclaredVariable(pos, id.clone()))
+    fn tc_decl(&mut self, decl: &Decl) -> Result<(), Error> {
+        if self.symtable.contains_key(&decl.id) {
+            return Err(Error::GenericError);
+        } else {
+            self.symtable.insert(decl.id.clone(), decl.ty);
+            Ok(())
         }
-    } else {
-        Err(Error::GenericError)
     }
-}
 
-fn tc_stmt_read(stmt: &Stmt, symtable: &Symtable) -> Result<(), Error> {
-    if let Stmt::Read { pos, ref id } = *stmt {
-        if symtable.contains_key(id) {
+    fn tc_stmts(&mut self, stmts: &Vec<Stmt>) -> Result<(), Error> {
+        for stmt in stmts {
+            try!(self.tc_stmt(&stmt));
+        }
+        Ok(())
+    }
+
+    fn tc_stmt(&mut self, stmt: &Stmt) -> Result<(), Error> {
+        match *stmt {
+            Stmt::Assign { .. } => self.tc_stmt_assign(stmt),
+            Stmt::Read { .. } => self.tc_stmt_read(stmt),
+            Stmt::Print { .. } => self.tc_stmt_print(stmt),
+            Stmt::If { .. } => self.tc_stmt_if(stmt),
+            Stmt::While { .. } => self.tc_stmt_while(stmt),
+        }
+    }
+
+    fn tc_stmt_assign(&mut self, stmt: &Stmt) -> Result<(), Error> {
+        if let Stmt::Assign { pos, ref id, ref expr } = *stmt {
+            let expr_ty = try!(self.tc_expr(expr));
+            match self.symtable.get(id) {
+                Some(&id_ty) => {
+                    match (id_ty, expr_ty) {
+                        (Type::Int, Type::Int) => Ok(()),
+                        (Type::Int, Type::Float) =>
+                            Err(Error::UnexpectedType { pos: pos, expected: Type::Int, actual: Type::Float }),
+                        (Type::Float, Type::Int) => Ok(()),
+                        (Type::Float, Type::Float) => Ok(()),
+                    }
+                }
+                None => Err(Error::UndeclaredVariable(pos, id.clone()))
+            }
+        } else {
+            Err(Error::GenericError)
+        }
+    }
+
+    fn tc_stmt_read(&mut self, stmt: &Stmt) -> Result<(), Error> {
+        if let Stmt::Read { pos, ref id } = *stmt {
+            if self.symtable.contains_key(id) {
+                Ok(())
+            } else {
+                Err(Error::UndeclaredVariable(pos, id.clone()))
+            }
+        } else {
+            Err(Error::GenericError)
+        }
+    }
+
+    fn tc_stmt_print(&mut self, stmt: &Stmt) -> Result<(), Error> {
+        if let Stmt::Print { pos, ref expr } = *stmt {
+            try!(self.tc_expr(expr));
             Ok(())
         } else {
-            Err(Error::UndeclaredVariable(pos, id.clone()))
+            Err(Error::GenericError)
         }
-    } else {
-        Err(Error::GenericError)
     }
-}
 
-fn tc_stmt_print(stmt: &Stmt, symtable: &mut Symtable) -> Result<(), Error> {
-    if let Stmt::Print { pos, ref expr } = *stmt {
-        try!(tc_expr(expr, symtable));
-        Ok(())
-    } else {
-        Err(Error::GenericError)
-    }
-}
-
-fn tc_stmt_if(stmt: &Stmt, symtable: &mut Symtable) -> Result<(), Error> {
-    if let Stmt::If { pos, ref expr, ref then_stmts, ref else_stmts } = *stmt {
-        let t = try!(tc_expr(expr, symtable));
-        match t {
-            Type::Int => {
-                try!(tc_stmts(then_stmts, symtable));
-                try!(tc_stmts(else_stmts, symtable));
-                Ok(())
+    fn tc_stmt_if(&mut self, stmt: &Stmt) -> Result<(), Error> {
+        if let Stmt::If { pos, ref expr, ref then_stmts, ref else_stmts } = *stmt {
+            let t = try!(self.tc_expr(expr));
+            match t {
+                Type::Int => {
+                    try!(self.tc_stmts(then_stmts));
+                    try!(self.tc_stmts(else_stmts));
+                    Ok(())
+                }
+                _ => { Err(Error::UnexpectedType{ pos: pos, expected: Type::Int, actual: t }) }
             }
-            _ => { Err(Error::UnexpectedType{ pos: pos, expected: Type::Int, actual: t }) }
+        } else {
+            Err(Error::GenericError)
         }
-    } else {
-        Err(Error::GenericError)
     }
-}
 
-fn tc_stmt_while(stmt: &Stmt, symtable: &mut Symtable) -> Result<(), Error> {
-    if let Stmt::While { pos, ref expr, ref stmts } = *stmt {
-        let t = try!(tc_expr(expr, symtable));
-        match t {
-            Type::Int => {
-                tc_stmts(stmts, symtable)
+    fn tc_stmt_while(&mut self, stmt: &Stmt) -> Result<(), Error> {
+        if let Stmt::While { pos, ref expr, ref stmts } = *stmt {
+            let t = try!(self.tc_expr(expr));
+            match t {
+                Type::Int => {
+                    self.tc_stmts(stmts)
+                }
+                _ => {
+                    Err(Error::GenericError)
+                }
             }
-            _ => {
-                Err(Error::GenericError)
-            }
+        } else {
+            Err(Error::GenericError)
         }
-    } else {
-        Err(Error::GenericError)
     }
-}
 
-fn tc_expr(expr: &Expr, symtable: &mut Symtable) -> Result<Type, Error> {
-    let ty = try!(match *expr {
-        Expr::Int { .. } => Ok(Type::Int),
-        Expr::Float { .. } => Ok(Type::Float),
-        Expr::Id { .. } => tc_expr_id(expr, symtable),
-        Expr::Negate { .. } => tc_expr_negate(expr, symtable),
-        Expr::Add { .. } => tc_expr_binop(expr, symtable),
-        Expr::Sub { .. } => tc_expr_binop(expr, symtable),
-        Expr::Mul { .. } => tc_expr_binop(expr, symtable),
-        Expr::Div { .. } => tc_expr_binop(expr, symtable),
-    });
-    // TODO(vfoley): insert expr -> ty into symtable
-    Ok(ty)
-}
-
-fn tc_expr_id(expr: &Expr, symtable: &mut Symtable) -> Result<Type, Error> {
-    if let Expr::Id { pos, ref id } = *expr {
-        match symtable.get(id) {
-            Some(ty) => Ok(*ty),
-            None => Err(Error::UndeclaredVariable(pos, id.clone())),
-        }
-    } else {
-        Err(Error::GenericError)
+    fn tc_expr(&mut self, expr: &Expr) -> Result<Type, Error> {
+        let ty = try!(match *expr {
+            Expr::Int { .. } => Ok(Type::Int),
+            Expr::Float { .. } => Ok(Type::Float),
+            Expr::Id { .. } => self.tc_expr_id(expr),
+            Expr::Negate { .. } => self.tc_expr_negate(expr),
+            Expr::Add { .. } => self.tc_expr_binop(expr),
+            Expr::Sub { .. } => self.tc_expr_binop(expr),
+            Expr::Mul { .. } => self.tc_expr_binop(expr),
+            Expr::Div { .. } => self.tc_expr_binop(expr),
+        });
+        // TODO(vfoley): insert expr -> ty into symtable
+        Ok(ty)
     }
-}
 
-fn tc_expr_negate(e: &Expr, symtable: &mut Symtable) -> Result<Type, Error> {
-    tc_expr(e, symtable)
-}
-
-fn tc_expr_binop(expr: &Expr, symtable: &mut Symtable) -> Result<Type, Error> {
-    match *expr {
-        Expr::Add { pos, ref expr1, ref expr2 } |
-        Expr::Sub { pos, ref expr1, ref expr2 } |
-        Expr::Mul { pos, ref expr1, ref expr2 } |
-        Expr::Div { pos, ref expr1, ref expr2 } => {
-            let t1 = try!(tc_expr(expr1, symtable));
-            let t2 = try!(tc_expr(expr2, symtable));
-
-            match (t1, t2) {
-                (Type::Int   , Type::Int)   => Ok(Type::Int),
-                (Type::Int   , Type::Float) => Ok(Type::Float),
-                (Type::Float , Type::Int)   => Ok(Type::Float),
-                (Type::Float , Type::Float) => Ok(Type::Float),
+    fn tc_expr_id(&mut self, expr: &Expr) -> Result<Type, Error> {
+        if let Expr::Id { pos, ref id } = *expr {
+            match self.symtable.get(id) {
+                Some(ty) => Ok(*ty),
+                None => Err(Error::UndeclaredVariable(pos, id.clone())),
             }
+        } else {
+            Err(Error::GenericError)
         }
-        _ => Err(Error::GenericError)
+    }
+
+    fn tc_expr_negate(&mut self, e: &Expr) -> Result<Type, Error> {
+        self.tc_expr(e)
+    }
+
+    fn tc_expr_binop(&mut self, expr: &Expr) -> Result<Type, Error> {
+        match *expr {
+            Expr::Add { pos, ref expr1, ref expr2 } |
+            Expr::Sub { pos, ref expr1, ref expr2 } |
+            Expr::Mul { pos, ref expr1, ref expr2 } |
+            Expr::Div { pos, ref expr1, ref expr2 } => {
+                let t1 = try!(self.tc_expr(expr1));
+                let t2 = try!(self.tc_expr(expr2));
+
+                match (t1, t2) {
+                    (Type::Int   , Type::Int)   => Ok(Type::Int),
+                    (Type::Int   , Type::Float) => Ok(Type::Float),
+                    (Type::Float , Type::Int)   => Ok(Type::Float),
+                    (Type::Float , Type::Float) => Ok(Type::Float),
+                }
+            }
+            _ => Err(Error::GenericError)
+        }
     }
 }

@@ -10,6 +10,7 @@ use token::{Token, TokenType};
 use error::Error;
 use scanner::Scanner;
 use parser::Parser;
+use typecheck::TypeChecker;
 use std::io::{Read, stdin};
 
 fn compile() -> Result<(), Error> {
@@ -31,7 +32,8 @@ fn compile() -> Result<(), Error> {
     let mut parser = Parser::new(tokens);
     let program = try!(parser.parse_program());
 
-    try!(typecheck::tc_program(&program));
+    let mut typechecker = TypeChecker::new();
+    try!(typechecker.tc_program(&program));
 
     Ok(())
 }
