@@ -7,11 +7,12 @@ mod parser;
 mod typecheck;
 
 use token::{Token, TokenType};
+use error::Error;
 use scanner::Scanner;
 use parser::Parser;
 use std::io::{Read, stdin};
 
-fn main() {
+fn compile() -> Result<(), Error> {
     let mut data: String = String::new();
     let _ = stdin().read_to_string(&mut data);
     let mut scanner = Scanner::new(data);
@@ -19,26 +20,25 @@ fn main() {
     let mut tokens: Vec<Token> = Vec::new();
 
     loop {
-        match scanner.next_token() {
-            Ok(tok) => {
-                let is_eof = tok.typ == TokenType::Eof;
-                tokens.push(tok);
-                if is_eof {
-                    break;
-                }
-            }
-            Err(e) => { println!("Error: {:?}", e); return; }
+        let tok = try!(scanner.next_token());
+        let is_eof = tok.typ == TokenType::Eof;
+        tokens.push(tok);
+        if is_eof {
+            break;
         }
     }
 
-    for tok in tokens.iter() {
-        println!("{:?}", tok);
-    }
-
     let mut parser = Parser::new(tokens);
-    let program = parser.parse_program();
-    println!("{:?}", program);
+    let program = try!(parser.parse_program());
 
-    let x = typecheck::tc_program(&program.unwrap());
-    println!("{:?}", x);
+    try!(typecheck::tc_program(&program));
+
+    Ok(())
+}
+
+fn main() {
+    match compile() {
+        Ok(()) => (),
+        Err(e) => println!("Error: {}", e)
+    }
 }

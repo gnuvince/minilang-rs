@@ -53,12 +53,13 @@ fn tc_stmt_assign(stmt: &Stmt, symtable: &mut Symtable) -> Result<(), Error> {
             Some(&id_ty) => {
                 match (id_ty, expr_ty) {
                     (Type::Int, Type::Int) => Ok(()),
-                    (Type::Int, Type::Float) => Err(Error::GenericError),
+                    (Type::Int, Type::Float) =>
+                        Err(Error::UnexpectedType { pos: pos, expected: Type::Int, actual: Type::Float }),
                     (Type::Float, Type::Int) => Ok(()),
                     (Type::Float, Type::Float) => Ok(()),
                 }
             }
-            None => Err(Error::GenericError)
+            None => Err(Error::UndeclaredVariable(pos, id.clone()))
         }
     } else {
         Err(Error::GenericError)
@@ -70,7 +71,7 @@ fn tc_stmt_read(stmt: &Stmt, symtable: &Symtable) -> Result<(), Error> {
         if symtable.contains_key(id) {
             Ok(())
         } else {
-            Err(Error::GenericError)
+            Err(Error::UndeclaredVariable(pos, id.clone()))
         }
     } else {
         Err(Error::GenericError)
@@ -95,7 +96,7 @@ fn tc_stmt_if(stmt: &Stmt, symtable: &mut Symtable) -> Result<(), Error> {
                 try!(tc_stmts(else_stmts, symtable));
                 Ok(())
             }
-            _ => { Err(Error::GenericError) }
+            _ => { Err(Error::UnexpectedType{ pos: pos, expected: Type::Int, actual: t }) }
         }
     } else {
         Err(Error::GenericError)
@@ -124,9 +125,9 @@ fn tc_expr(expr: &Expr, symtable: &mut Symtable) -> Result<Type, Error> {
         Expr::Float { .. } => Ok(Type::Float),
         Expr::Id { .. } => tc_expr_id(expr, symtable),
         Expr::Negate { .. } => tc_expr_negate(expr, symtable),
-        Expr::Add { .. } |
-        Expr::Sub { .. } |
-        Expr::Mul { .. } |
+        Expr::Add { .. } => tc_expr_binop(expr, symtable),
+        Expr::Sub { .. } => tc_expr_binop(expr, symtable),
+        Expr::Mul { .. } => tc_expr_binop(expr, symtable),
         Expr::Div { .. } => tc_expr_binop(expr, symtable),
     });
     // TODO(vfoley): insert expr -> ty into symtable
@@ -137,7 +138,7 @@ fn tc_expr_id(expr: &Expr, symtable: &mut Symtable) -> Result<Type, Error> {
     if let Expr::Id { pos, ref id } = *expr {
         match symtable.get(id) {
             Some(ty) => Ok(*ty),
-            None => Err(Error::GenericError),
+            None => Err(Error::UndeclaredVariable(pos, id.clone())),
         }
     } else {
         Err(Error::GenericError)
