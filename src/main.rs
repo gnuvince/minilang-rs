@@ -39,5 +39,6 @@ fn main() {
     let program = parser.parse_program();
     println!("{:?}", program);
 
-    typecheck::tc_program(&program.unwrap());
+    let x = typecheck::tc_program(&program.unwrap());
+    println!("{:?}", x);
 }
