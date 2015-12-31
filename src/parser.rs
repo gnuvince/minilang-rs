@@ -2,6 +2,7 @@ use std::mem;
 use std::hash::{Hash, Hasher};
 
 use token::{Token, TokenType};
+use pos::Pos;
 use error::Error;
 use types::Type;
 
@@ -23,29 +24,31 @@ impl Eq for Float {
 }
 
 #[derive(Debug)]
-pub enum Decl {
-    Decl(String, Type),
+pub struct Decl {
+    pub pos: Pos,
+    pub id: String,
+    pub ty: Type,
 }
 
 #[derive(Debug)]
 pub enum Stmt {
-    Read(String),
-    Print(Expr),
-    Assign(String, Expr),
-    If(Expr, Vec<Stmt>, Vec<Stmt>),
-    While(Expr, Vec<Stmt>),
+    Read { pos: Pos, id: String },
+    Print { pos: Pos, expr: Expr },
+    Assign { pos: Pos, id: String, expr: Expr },
+    If { pos: Pos, expr: Expr, then_stmts: Vec<Stmt>, else_stmts: Vec<Stmt> },
+    While { pos: Pos, expr: Expr, stmts: Vec<Stmt> },
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum Expr {
-    Id(String),
-    Int(i64),
-    Float(Float),
-    Negate(Box<Expr>),
-    Add(Box<Expr>, Box<Expr>),
-    Sub(Box<Expr>, Box<Expr>),
-    Mul(Box<Expr>, Box<Expr>),
-    Div(Box<Expr>, Box<Expr>),
+    Id { pos: Pos, id: String },
+    Int { pos: Pos, value: i64 },
+    Float { pos: Pos, value: Float },
+    Negate { pos: Pos, expr: Box<Expr> },
+    Add { pos: Pos, expr1: Box<Expr>, expr2: Box<Expr> },
+    Sub { pos: Pos, expr1: Box<Expr>, expr2: Box<Expr> },
+    Mul { pos: Pos, expr1: Box<Expr>, expr2: Box<Expr> },
+    Div { pos: Pos, expr1: Box<Expr>, expr2: Box<Expr> },
 }
 
 #[derive(Debug)]
@@ -74,6 +77,10 @@ impl Parser {
 
     fn curr_token(&self) -> Token {
         self.tokens[self.index].clone()
+    }
+
+    fn token_pos(&self) -> Pos {
+        self.tokens[self.index].pos
     }
 
     fn eat(&mut self, t: TokenType) -> Result<(), Error> {
@@ -134,12 +141,13 @@ impl Parser {
     }
 
     fn parse_decl(&mut self) -> Result<Decl, Error> {
+        let pos = self.token_pos();
         try!(self.eat(TokenType::Var));
         let id = try!(self.eat_lexeme(TokenType::Id));
         try!(self.eat(TokenType::Colon));
         let ty = try!(self.eat_type());
         try!(self.eat(TokenType::Semicolon));
-        Ok(Decl::Decl(id, ty))
+        Ok(Decl { pos: pos, id: id, ty: ty })
     }
 
 
@@ -172,28 +180,32 @@ impl Parser {
     }
 
     fn parse_read(&mut self) -> Result<Stmt, Error> {
+        let pos = self.token_pos();
         try!(self.eat(TokenType::Read));
         let id = try!(self.eat_lexeme(TokenType::Id));
         try!(self.eat(TokenType::Semicolon));
-        Ok(Stmt::Read(id))
+        Ok(Stmt::Read { pos: pos, id: id })
     }
 
     fn parse_print(&mut self) -> Result<Stmt, Error> {
+        let pos = self.token_pos();
         try!(self.eat(TokenType::Print));
         let e = try!(self.parse_expr());
         try!(self.eat(TokenType::Semicolon));
-        Ok(Stmt::Print(e))
+        Ok(Stmt::Print { pos: pos, expr: e })
     }
 
     fn parse_assign(&mut self) -> Result<Stmt, Error> {
+        let pos = self.token_pos();
         let id = try!(self.eat_lexeme(TokenType::Id));
         try!(self.eat(TokenType::Equal));
         let e = try!(self.parse_expr());
         try!(self.eat(TokenType::Semicolon));
-        Ok(Stmt::Assign(id, e))
+        Ok(Stmt::Assign { pos: pos, id: id, expr: e })
     }
 
     fn parse_if(&mut self) -> Result<Stmt, Error> {
+        let pos = self.token_pos();
         try!(self.eat(TokenType::If));
         let e = try!(self.parse_expr());
         try!(self.eat(TokenType::Then));
@@ -201,34 +213,54 @@ impl Parser {
         try!(self.eat(TokenType::Else));
         let else_stmts = try!(self.parse_stmts());
         try!(self.eat(TokenType::End));
-        Ok(Stmt::If(e, then_stmts, else_stmts))
+        Ok(Stmt::If {
+            pos: pos,
+            expr: e,
+            then_stmts: then_stmts,
+            else_stmts: else_stmts,
+        })
     }
 
     fn parse_while(&mut self) -> Result<Stmt, Error> {
+        let pos = self.token_pos();
         try!(self.eat(TokenType::While));
         let e = try!(self.parse_expr());
         try!(self.eat(TokenType::Do));
         let stmts = try!(self.parse_stmts());
         try!(self.eat(TokenType::Done));
-        Ok(Stmt::While(e, stmts))
+        Ok(Stmt::While {
+            pos: pos,
+            expr: e,
+            stmts: stmts,
+        })
     }
 
     fn parse_expr(&mut self) -> Result<Expr, Error> {
         if self.peek(TokenType::Minus) {
+            let pos = self.token_pos();
             self.eat(TokenType::Minus);
             let e = try!(self.parse_expr());
-            Ok(Expr::Negate(Box::new(e)))
+            Ok(Expr::Negate { pos: pos, expr: Box::new(e) })
         } else {
+            let pos = self.token_pos();
             let mut term = try!(self.parse_term());
             while self.next_is_add() {
                 if self.peek(TokenType::Plus) {
                     self.eat(TokenType::Plus);
                     let t2 = try!(self.parse_term());
-                    term = Expr::Add(Box::new(term), Box::new(t2));
+                    term = Expr::Add {
+                        pos: pos,
+                        expr1: Box::new(term),
+                        expr2: Box::new(t2)
+                    };
                 } else if self.peek(TokenType::Minus) {
                     self.eat(TokenType::Minus);
                     let t2 = try!(self.parse_term());
-                    term = Expr::Sub(Box::new(term), Box::new(t2));
+                    term = Expr::Sub {
+                        pos: pos,
+                        expr1: Box::new(term),
+                        expr2: Box::new(t2)
+                    };
                 } else {
                     return Err(Error::UnexpectedToken(
                         self.curr_token(),
@@ -240,16 +272,25 @@ impl Parser {
     }
 
     fn parse_term(&mut self) -> Result<Expr, Error> {
+        let pos = self.token_pos();
         let mut fact = try!(self.parse_factor());
         while self.next_is_mul() {
             if self.peek(TokenType::Star) {
                 self.eat(TokenType::Star);
                 let f2 = try!(self.parse_factor());
-                fact = Expr::Mul(Box::new(fact), Box::new(f2));
+                fact = Expr::Mul {
+                    pos: pos,
+                    expr1: Box::new(fact),
+                    expr2: Box::new(f2),
+                };
             } else if self.peek(TokenType::Slash) {
                 self.eat(TokenType::Slash);
                 let f2 = try!(self.parse_factor());
-                fact = Expr::Div(Box::new(fact), Box::new(f2));
+                fact = Expr::Div {
+                    pos: pos,
+                    expr1: Box::new(fact),
+                    expr2: Box::new(f2),
+                };
             } else {
                 return Err(Error::UnexpectedToken(
                     self.curr_token(),
@@ -280,30 +321,34 @@ impl Parser {
     }
 
     fn parse_int(&mut self) -> Result<Expr, Error> {
+        let pos = self.token_pos();
         let lexeme = try!(self.eat_lexeme(TokenType::Int));
         match lexeme.parse::<i64>() {
-            Ok(n) => Ok(Expr::Int(n)),
+            Ok(n) => Ok(Expr::Int { pos: pos, value: n }),
             Err(_) => Err(Error::InvalidIntLiteral(lexeme))
         }
     }
 
     fn parse_float(&mut self) -> Result<Expr, Error> {
+        let pos = self.token_pos();
         let lexeme = try!(self.eat_lexeme(TokenType::Float));
         match lexeme.parse::<f64>() {
-            Ok(n) => Ok(Expr::Float(Float(n))),
+            Ok(n) => Ok(Expr::Float { pos: pos, value: Float(n) }),
             Err(_) => Err(Error::InvalidFloatLiteral(lexeme))
         }
     }
 
     fn parse_id(&mut self) -> Result<Expr, Error> {
+        let pos = self.token_pos();
         let lexeme = try!(self.eat_lexeme(TokenType::Id));
-        Ok(Expr::Id(lexeme))
+        Ok(Expr::Id { pos: pos, id: lexeme })
     }
 
     fn parse_negate(&mut self) -> Result<Expr, Error> {
+        let pos = self.token_pos();
         try!(self.eat(TokenType::Minus));
         let e = try!(self.parse_expr());
-        Ok(Expr::Negate(Box::new(e)))
+        Ok(Expr::Negate { pos: pos, expr: Box::new(e) })
     }
 
     fn is_stmt_start(&self) -> bool {
