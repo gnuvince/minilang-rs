@@ -325,7 +325,7 @@ impl Parser {
         let lexeme = try!(self.eat_lexeme(TokenType::Int));
         match lexeme.parse::<i64>() {
             Ok(n) => Ok(Expr::Int { pos: pos, value: n }),
-            Err(_) => Err(Error::InvalidIntLiteral(lexeme))
+            Err(_) => Err(Error::InvalidIntLiteral(pos, lexeme))
         }
     }
 
@@ -334,7 +334,7 @@ impl Parser {
         let lexeme = try!(self.eat_lexeme(TokenType::Float));
         match lexeme.parse::<f64>() {
             Ok(n) => Ok(Expr::Float { pos: pos, value: Float(n) }),
-            Err(_) => Err(Error::InvalidFloatLiteral(lexeme))
+            Err(_) => Err(Error::InvalidFloatLiteral(pos, lexeme))
         }
     }
 
