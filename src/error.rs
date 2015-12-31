@@ -6,5 +6,7 @@ pub enum Error {
     GenericError,
     IllegalCharacter(Pos, char),
 
-    UnexpectedToken(Token, TokenType)
+    UnexpectedToken(Token, Vec<TokenType>),
+    InvalidIntLiteral(String),
+    InvalidFloatLiteral(String),
 }

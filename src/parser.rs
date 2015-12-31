@@ -1,11 +1,6 @@
 use token::{Token, TokenType};
 use error::Error;
-
-#[derive(Debug)]
-enum Type {
-    Int,
-    Float,
-}
+use types::Type;
 
 #[derive(Debug)]
 enum Decl {
@@ -67,7 +62,7 @@ impl Parser {
             self.index += 1;
             Ok(())
         } else {
-            Err(Error::UnexpectedToken(self.curr_token(), t))
+            Err(Error::UnexpectedToken(self.curr_token(), vec![t]))
         }
     }
 
@@ -79,10 +74,10 @@ impl Parser {
                     self.index += 1;
                     Ok(lexeme.clone())
                 }
-                None => Err(Error::UnexpectedToken(self.curr_token(), t))
+                None => Err(Error::UnexpectedToken(self.curr_token(), vec![t]))
             }
         } else {
-            Err(Error::UnexpectedToken(self.curr_token(), t))
+            Err(Error::UnexpectedToken(self.curr_token(), vec![t]))
         }
     }
 
@@ -94,7 +89,7 @@ impl Parser {
             self.index += 1;
             Ok(Type::Float)
         } else {
-            Err(Error::GenericError)
+            Err(Error::UnexpectedToken(self.curr_token(), vec![TokenType::TypeInt, TokenType::TypeFloat]))
         }
     }
 
@@ -149,7 +144,10 @@ impl Parser {
         } else if self.peek(TokenType::While) {
             self.parse_while()
         } else {
-            Err(Error::GenericError)
+            Err(Error::UnexpectedToken(
+                self.curr_token(),
+                vec![TokenType::Read, TokenType::Print,
+                     TokenType::Id, TokenType::If, TokenType::While]))
         }
     }
 
@@ -212,7 +210,9 @@ impl Parser {
                     let t2 = try!(self.parse_term());
                     term = Expr::Sub(Box::new(term), Box::new(t2));
                 } else {
-                    return Err(Error::GenericError);
+                    return Err(Error::UnexpectedToken(
+                        self.curr_token(),
+                        vec![TokenType::Plus, TokenType::Minus]));
                 }
             }
             Ok(term)
@@ -231,7 +231,9 @@ impl Parser {
                 let f2 = try!(self.parse_factor());
                 fact = Expr::Div(Box::new(fact), Box::new(f2));
             } else {
-                return Err(Error::GenericError);
+                return Err(Error::UnexpectedToken(
+                    self.curr_token(),
+                    vec![TokenType::Star, TokenType::Slash]));
             }
         }
         Ok(fact)
@@ -250,7 +252,10 @@ impl Parser {
             try!(self.eat(TokenType::RParen));
             Ok(e)
         } else {
-            Err(Error::GenericError)
+            Err(Error::UnexpectedToken(
+                self.curr_token(),
+                vec![TokenType::Int, TokenType::Float, TokenType::Id,
+                     TokenType::LParen]))
         }
     }
 
@@ -258,7 +263,7 @@ impl Parser {
         let lexeme = try!(self.eat_lexeme(TokenType::Int));
         match lexeme.parse::<i64>() {
             Ok(n) => Ok(Expr::Int(n)),
-            Err(_) => Err(Error::GenericError)
+            Err(_) => Err(Error::InvalidIntLiteral(lexeme))
         }
     }
 
@@ -266,7 +271,7 @@ impl Parser {
         let lexeme = try!(self.eat_lexeme(TokenType::Float));
         match lexeme.parse::<f64>() {
             Ok(n) => Ok(Expr::Float(n)),
-            Err(_) => Err(Error::GenericError)
+            Err(_) => Err(Error::InvalidFloatLiteral(lexeme))
         }
     }
 

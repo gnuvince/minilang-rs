@@ -2,6 +2,7 @@ mod error;
 mod pos;
 mod token;
 mod scanner;
+mod types;
 mod parser;
 
 use token::{Token, TokenType};
