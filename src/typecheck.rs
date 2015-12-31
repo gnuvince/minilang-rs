@@ -47,79 +47,74 @@ fn tc_stmt(stmt: &Stmt, symtable: &mut Symtable) -> Result<(), Error> {
 }
 
 fn tc_stmt_assign(stmt: &Stmt, symtable: &mut Symtable) -> Result<(), Error> {
-    match *stmt {
-        Stmt::Assign { pos, ref id, ref expr } => {
-            let expr_ty = try!(tc_expr(expr, symtable));
-            match symtable.get(id) {
-                Some(&id_ty) => {
-                    match (id_ty, expr_ty) {
-                        (Type::Int, Type::Int) => Ok(()),
-                        (Type::Int, Type::Float) => Err(Error::GenericError),
-                        (Type::Float, Type::Int) => Ok(()),
-                        (Type::Float, Type::Float) => Ok(()),
-                    }
+    if let Stmt::Assign { pos, ref id, ref expr } = *stmt {
+        let expr_ty = try!(tc_expr(expr, symtable));
+        match symtable.get(id) {
+            Some(&id_ty) => {
+                match (id_ty, expr_ty) {
+                    (Type::Int, Type::Int) => Ok(()),
+                    (Type::Int, Type::Float) => Err(Error::GenericError),
+                    (Type::Float, Type::Int) => Ok(()),
+                    (Type::Float, Type::Float) => Ok(()),
                 }
-                None => Err(Error::GenericError)
             }
+            None => Err(Error::GenericError)
         }
-        _ => { Err(Error::GenericError) }
+    } else {
+        Err(Error::GenericError)
     }
 }
 
 fn tc_stmt_read(stmt: &Stmt, symtable: &Symtable) -> Result<(), Error> {
-    match *stmt {
-        Stmt::Read { pos, ref id } => {
-            if symtable.contains_key(id) {
-                Ok(())
-            } else {
-                Err(Error::GenericError)
-            }
+    if let Stmt::Read { pos, ref id } = *stmt {
+        if symtable.contains_key(id) {
+            Ok(())
+        } else {
+            Err(Error::GenericError)
         }
-        _ => { Err(Error::GenericError) }
+    } else {
+        Err(Error::GenericError)
     }
 }
 
 fn tc_stmt_print(stmt: &Stmt, symtable: &mut Symtable) -> Result<(), Error> {
-    match *stmt {
-        Stmt::Print { pos, ref expr } => {
-            try!(tc_expr(expr, symtable));
-            Ok(())
-        }
-        _ => Err(Error::GenericError)
+    if let Stmt::Print { pos, ref expr } = *stmt {
+        try!(tc_expr(expr, symtable));
+        Ok(())
+    } else {
+        Err(Error::GenericError)
     }
 }
 
 fn tc_stmt_if(stmt: &Stmt, symtable: &mut Symtable) -> Result<(), Error> {
-    match *stmt {
-        Stmt::If { pos, ref expr, ref then_stmts, ref else_stmts } => {
-            let t = try!(tc_expr(expr, symtable));
-            match t {
-                Type::Int => {
-                    try!(tc_stmts(then_stmts, symtable));
-                    try!(tc_stmts(else_stmts, symtable));
-                    Ok(())
-                }
-                _ => { Err(Error::GenericError) }
+    if let Stmt::If { pos, ref expr, ref then_stmts, ref else_stmts } = *stmt {
+        let t = try!(tc_expr(expr, symtable));
+        match t {
+            Type::Int => {
+                try!(tc_stmts(then_stmts, symtable));
+                try!(tc_stmts(else_stmts, symtable));
+                Ok(())
             }
+            _ => { Err(Error::GenericError) }
         }
-        _ => { Err(Error::GenericError) }
+    } else {
+        Err(Error::GenericError)
     }
 }
 
 fn tc_stmt_while(stmt: &Stmt, symtable: &mut Symtable) -> Result<(), Error> {
-    match *stmt {
-        Stmt::While { pos, ref expr, ref stmts } => {
-            let t = try!(tc_expr(expr, symtable));
-            match t {
-                Type::Int => {
-                    tc_stmts(stmts, symtable)
-                }
-                _ => {
-                    Err(Error::GenericError)
-                }
+    if let Stmt::While { pos, ref expr, ref stmts } = *stmt {
+        let t = try!(tc_expr(expr, symtable));
+        match t {
+            Type::Int => {
+                tc_stmts(stmts, symtable)
+            }
+            _ => {
+                Err(Error::GenericError)
             }
         }
-        _ => { Err(Error::GenericError) }
+    } else {
+        Err(Error::GenericError)
     }
 }
 
@@ -139,14 +134,13 @@ fn tc_expr(expr: &Expr, symtable: &mut Symtable) -> Result<Type, Error> {
 }
 
 fn tc_expr_id(expr: &Expr, symtable: &mut Symtable) -> Result<Type, Error> {
-    match *expr {
-        Expr::Id { pos, ref id } => {
-            match symtable.get(id) {
-                Some(ty) => Ok(*ty),
-                None => Err(Error::GenericError),
-            }
+    if let Expr::Id { pos, ref id } = *expr {
+        match symtable.get(id) {
+            Some(ty) => Ok(*ty),
+            None => Err(Error::GenericError),
         }
-        _ => { Err(Error::GenericError) }
+    } else {
+        Err(Error::GenericError)
     }
 }
 
