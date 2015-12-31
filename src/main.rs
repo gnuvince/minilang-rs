@@ -4,6 +4,7 @@ mod token;
 mod scanner;
 mod types;
 mod parser;
+mod typecheck;
 
 use token::{Token, TokenType};
 use scanner::Scanner;
@@ -37,4 +38,6 @@ fn main() {
     let mut parser = Parser::new(tokens);
     let program = parser.parse_program();
     println!("{:?}", program);
+
+    typecheck::tc_program(&program.unwrap());
 }

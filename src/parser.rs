@@ -1,14 +1,34 @@
+use std::mem;
+use std::hash::{Hash, Hasher};
+
 use token::{Token, TokenType};
 use error::Error;
 use types::Type;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct Float(f64);
+
+impl Hash for Float {
+    fn hash<H>(&self, state: &mut H) where H: Hasher {
+        unsafe {
+            let h: i64 = mem::transmute(*self);
+            state.write_i64(h);
+            state.finish();
+        }
+    }
+}
+
+impl Eq for Float {
+
+}
+
 #[derive(Debug)]
-enum Decl {
+pub enum Decl {
     Decl(String, Type),
 }
 
 #[derive(Debug)]
-enum Stmt {
+pub enum Stmt {
     Read(String),
     Print(Expr),
     Assign(String, Expr),
@@ -16,11 +36,11 @@ enum Stmt {
     While(Expr, Vec<Stmt>),
 }
 
-#[derive(Debug)]
-enum Expr {
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub enum Expr {
     Id(String),
     Int(i64),
-    Float(f64),
+    Float(Float),
     Negate(Box<Expr>),
     Add(Box<Expr>, Box<Expr>),
     Sub(Box<Expr>, Box<Expr>),
@@ -30,8 +50,8 @@ enum Expr {
 
 #[derive(Debug)]
 pub struct Program {
-    decls: Vec<Decl>,
-    stmts: Vec<Stmt>,
+    pub decls: Vec<Decl>,
+    pub stmts: Vec<Stmt>,
 }
 
 pub struct Parser {
@@ -270,7 +290,7 @@ impl Parser {
     fn parse_float(&mut self) -> Result<Expr, Error> {
         let lexeme = try!(self.eat_lexeme(TokenType::Float));
         match lexeme.parse::<f64>() {
-            Ok(n) => Ok(Expr::Float(n)),
+            Ok(n) => Ok(Expr::Float(Float(n))),
             Err(_) => Err(Error::InvalidFloatLiteral(lexeme))
         }
     }
