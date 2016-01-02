@@ -157,8 +157,12 @@ impl TypeChecker {
         }
     }
 
-    fn tc_expr_negate(&mut self, e: &Expr) -> Result<Type, Error> {
-        self.tc_expr(e)
+    fn tc_expr_negate(&mut self, expr: &Expr) -> Result<Type, Error> {
+        if let Expr::Negate { pos, ref expr } = *expr {
+            self.tc_expr(expr)
+        } else {
+            Err(Error::GenericError)
+        }
     }
 
     fn tc_expr_binop(&mut self, expr: &Expr) -> Result<Type, Error> {

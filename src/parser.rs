@@ -236,39 +236,32 @@ impl Parser {
     }
 
     fn parse_expr(&mut self) -> Result<Expr, Error> {
-        if self.peek(TokenType::Minus) {
-            let pos = self.token_pos();
-            self.eat(TokenType::Minus);
-            let e = try!(self.parse_expr());
-            Ok(Expr::Negate { pos: pos, expr: Box::new(e) })
-        } else {
-            let pos = self.token_pos();
-            let mut term = try!(self.parse_term());
-            while self.next_is_add() {
-                if self.peek(TokenType::Plus) {
-                    self.eat(TokenType::Plus);
-                    let t2 = try!(self.parse_term());
-                    term = Expr::Add {
-                        pos: pos,
-                        expr1: Box::new(term),
-                        expr2: Box::new(t2)
-                    };
-                } else if self.peek(TokenType::Minus) {
-                    self.eat(TokenType::Minus);
-                    let t2 = try!(self.parse_term());
-                    term = Expr::Sub {
-                        pos: pos,
-                        expr1: Box::new(term),
-                        expr2: Box::new(t2)
-                    };
-                } else {
-                    return Err(Error::UnexpectedToken(
-                        self.curr_token(),
-                        vec![TokenType::Plus, TokenType::Minus]));
-                }
+        let pos = self.token_pos();
+        let mut term = try!(self.parse_term());
+        while self.next_is_add() {
+            if self.peek(TokenType::Plus) {
+                self.eat(TokenType::Plus);
+                let t2 = try!(self.parse_term());
+                term = Expr::Add {
+                    pos: pos,
+                    expr1: Box::new(term),
+                    expr2: Box::new(t2)
+                };
+            } else if self.peek(TokenType::Minus) {
+                self.eat(TokenType::Minus);
+                let t2 = try!(self.parse_term());
+                term = Expr::Sub {
+                    pos: pos,
+                    expr1: Box::new(term),
+                    expr2: Box::new(t2)
+                };
+            } else {
+                return Err(Error::UnexpectedToken(
+                    self.curr_token(),
+                    vec![TokenType::Plus, TokenType::Minus]));
             }
-            Ok(term)
         }
+        Ok(term)
     }
 
     fn parse_term(&mut self) -> Result<Expr, Error> {
@@ -301,6 +294,7 @@ impl Parser {
     }
 
     fn parse_factor(&mut self) -> Result<Expr, Error> {
+        let pos = self.token_pos();
         if self.peek(TokenType::Int) {
             self.parse_int()
         } else if self.peek(TokenType::Float) {
@@ -312,11 +306,15 @@ impl Parser {
             let e = try!(self.parse_expr());
             try!(self.eat(TokenType::RParen));
             Ok(e)
+        } else if self.peek(TokenType::Minus) {
+            try!(self.eat(TokenType::Minus));
+            let e = try!(self.parse_expr());
+            Ok(Expr::Negate { pos: pos, expr: Box::new(e) })
         } else {
             Err(Error::UnexpectedToken(
                 self.curr_token(),
                 vec![TokenType::Int, TokenType::Float, TokenType::Id,
-                     TokenType::LParen]))
+                     TokenType::Minus, TokenType::LParen]))
         }
     }
 

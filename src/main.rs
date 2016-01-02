@@ -32,8 +32,12 @@ fn compile() -> Result<(), Error> {
     let mut parser = Parser::new(tokens);
     let program = try!(parser.parse_program());
 
+    println!("{:?}", program);
+
     let mut typechecker = TypeChecker::new();
     try!(typechecker.tc_program(&program));
+
+    println!("{:?}", typechecker.symtable);
 
     Ok(())
 }
