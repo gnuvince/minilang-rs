@@ -39,16 +39,21 @@ pub enum Stmt {
     While { pos: Pos, expr: Expr, stmts: Vec<Stmt> },
 }
 
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+pub enum Binop {
+    Add,
+    Sub,
+    Mul,
+    Div,
+}
+
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum Expr {
     Id { pos: Pos, id: String },
     Int { pos: Pos, value: i64 },
     Float { pos: Pos, value: Float },
     Negate { pos: Pos, expr: Box<Expr> },
-    Add { pos: Pos, expr1: Box<Expr>, expr2: Box<Expr> },
-    Sub { pos: Pos, expr1: Box<Expr>, expr2: Box<Expr> },
-    Mul { pos: Pos, expr1: Box<Expr>, expr2: Box<Expr> },
-    Div { pos: Pos, expr1: Box<Expr>, expr2: Box<Expr> },
+    Binop { pos: Pos, op: Binop, expr1: Box<Expr>, expr2: Box<Expr> },
 }
 
 #[derive(Debug)]
@@ -240,18 +245,20 @@ impl Parser {
         let mut term = try!(self.parse_term());
         while self.next_is_add() {
             if self.peek(TokenType::Plus) {
-                self.eat(TokenType::Plus);
+                try!(self.eat(TokenType::Plus));
                 let t2 = try!(self.parse_term());
-                term = Expr::Add {
+                term = Expr::Binop {
                     pos: pos,
+                    op: Binop::Add,
                     expr1: Box::new(term),
                     expr2: Box::new(t2)
                 };
             } else if self.peek(TokenType::Minus) {
-                self.eat(TokenType::Minus);
+                try!(self.eat(TokenType::Minus));
                 let t2 = try!(self.parse_term());
-                term = Expr::Sub {
+                term = Expr::Binop {
                     pos: pos,
+                    op: Binop::Sub,
                     expr1: Box::new(term),
                     expr2: Box::new(t2)
                 };
@@ -269,18 +276,20 @@ impl Parser {
         let mut fact = try!(self.parse_factor());
         while self.next_is_mul() {
             if self.peek(TokenType::Star) {
-                self.eat(TokenType::Star);
+                try!(self.eat(TokenType::Star));
                 let f2 = try!(self.parse_factor());
-                fact = Expr::Mul {
+                fact = Expr::Binop {
                     pos: pos,
+                    op: Binop::Mul,
                     expr1: Box::new(fact),
                     expr2: Box::new(f2),
                 };
             } else if self.peek(TokenType::Slash) {
-                self.eat(TokenType::Slash);
+                try!(self.eat(TokenType::Slash));
                 let f2 = try!(self.parse_factor());
-                fact = Expr::Div {
+                fact = Expr::Binop {
                     pos: pos,
+                    op: Binop::Div,
                     expr1: Box::new(fact),
                     expr2: Box::new(f2),
                 };
@@ -340,13 +349,6 @@ impl Parser {
         let pos = self.token_pos();
         let lexeme = try!(self.eat_lexeme(TokenType::Id));
         Ok(Expr::Id { pos: pos, id: lexeme })
-    }
-
-    fn parse_negate(&mut self) -> Result<Expr, Error> {
-        let pos = self.token_pos();
-        try!(self.eat(TokenType::Minus));
-        let e = try!(self.parse_expr());
-        Ok(Expr::Negate { pos: pos, expr: Box::new(e) })
     }
 
     fn is_stmt_start(&self) -> bool {

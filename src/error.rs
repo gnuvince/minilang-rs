@@ -19,6 +19,7 @@ pub enum Error {
 
     // Typechecking errors
     UnexpectedType { pos: Pos, expected: Type, actual: Type },
+    DuplicateVariable(Pos, String),
     UndeclaredVariable(Pos, String),
 }
 
@@ -32,14 +33,14 @@ impl Display for Error {
             }
 
             Error::UnexpectedToken(ref tok, ref choices) => {
-                write!(f, "{}: Unexpected token. Found: {}. Expected: ", tok.pos, tok);
+                let _ = write!(f, "{}: Unexpected token. Found: {}. Expected: ", tok.pos, tok);
                 let mut not_first = false;
                 for choice in choices {
                     if not_first {
-                        write!(f, ", ");
+                        let _ = write!(f, ", ");
                     }
                     not_first = true;
-                    write!(f, "{}", choice);
+                    let _ = write!(f, "{}", choice);
                 }
                 write!(f, "")
             }
@@ -50,8 +51,10 @@ impl Display for Error {
 
             Error::UnexpectedType { pos, expected, actual } =>
                 write!(f, "{}: Unexpected type. Found: {}. Expected: {}.", pos, actual, expected),
+            Error::DuplicateVariable(pos, ref id) =>
+                write!(f, "{}: Duplicate variable declaration: {}", pos, id),
             Error::UndeclaredVariable(pos, ref id) =>
-                write!(f, "{}: Undeclared variable: {}", pos, id)
+                write!(f, "{}: Undeclared variable: {}", pos, id),
         }
     }
 }

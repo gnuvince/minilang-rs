@@ -34,7 +34,7 @@ impl TypeChecker {
 
     fn tc_decl(&mut self, decl: &Decl) -> Result<(), Error> {
         if self.symtable.contains_key(&decl.id) {
-            return Err(Error::GenericError);
+            Err(Error::DuplicateVariable(decl.pos, decl.id.clone()))
         } else {
             self.symtable.insert(decl.id.clone(), decl.ty);
             Ok(())
@@ -91,7 +91,7 @@ impl TypeChecker {
     }
 
     fn tc_stmt_print(&mut self, stmt: &Stmt) -> Result<(), Error> {
-        if let Stmt::Print { pos, ref expr } = *stmt {
+        if let Stmt::Print { ref expr, .. } = *stmt {
             try!(self.tc_expr(expr));
             Ok(())
         } else {
@@ -119,12 +119,8 @@ impl TypeChecker {
         if let Stmt::While { pos, ref expr, ref stmts } = *stmt {
             let t = try!(self.tc_expr(expr));
             match t {
-                Type::Int => {
-                    self.tc_stmts(stmts)
-                }
-                _ => {
-                    Err(Error::GenericError)
-                }
+                Type::Int => { self.tc_stmts(stmts) }
+                _ => { Err(Error::UnexpectedType { pos: pos, expected: Type::Int, actual: t }) }
             }
         } else {
             Err(Error::GenericError)
@@ -137,10 +133,7 @@ impl TypeChecker {
             Expr::Float { .. } => Ok(Type::Float),
             Expr::Id { .. } => self.tc_expr_id(expr),
             Expr::Negate { .. } => self.tc_expr_negate(expr),
-            Expr::Add { .. } => self.tc_expr_binop(expr),
-            Expr::Sub { .. } => self.tc_expr_binop(expr),
-            Expr::Mul { .. } => self.tc_expr_binop(expr),
-            Expr::Div { .. } => self.tc_expr_binop(expr),
+            Expr::Binop { .. } => self.tc_expr_binop(expr),
         });
 
         let expr_copy = expr.clone();
@@ -161,7 +154,7 @@ impl TypeChecker {
     }
 
     fn tc_expr_negate(&mut self, expr: &Expr) -> Result<Type, Error> {
-        if let Expr::Negate { pos, ref expr } = *expr {
+        if let Expr::Negate { ref expr, .. } = *expr {
             self.tc_expr(expr)
         } else {
             Err(Error::GenericError)
@@ -170,10 +163,7 @@ impl TypeChecker {
 
     fn tc_expr_binop(&mut self, expr: &Expr) -> Result<Type, Error> {
         match *expr {
-            Expr::Add { pos, ref expr1, ref expr2 } |
-            Expr::Sub { pos, ref expr1, ref expr2 } |
-            Expr::Mul { pos, ref expr1, ref expr2 } |
-            Expr::Div { pos, ref expr1, ref expr2 } => {
+            Expr::Binop { ref expr1, ref expr2, .. } => {
                 let t1 = try!(self.tc_expr(expr1));
                 let t2 = try!(self.tc_expr(expr2));
 
