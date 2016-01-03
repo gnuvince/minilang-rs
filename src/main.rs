@@ -37,7 +37,19 @@ fn compile() -> Result<(), Error> {
     let mut typechecker = TypeChecker::new();
     try!(typechecker.tc_program(&program));
 
-    println!("{:?}", typechecker.symtable);
+    println!("SYMBOL TABLE");
+    println!("============");
+    for (id, ty) in &typechecker.symtable {
+        println!("{}: {:?}", id, ty);
+    }
+
+    println!("");
+
+    println!("EXPRESSION TABLE");
+    println!("================");
+    for (expr, ty) in &typechecker.expr_table {
+        println!("{:?}: {:?}", expr, ty);
+    }
 
     Ok(())
 }

@@ -142,7 +142,10 @@ impl TypeChecker {
             Expr::Mul { .. } => self.tc_expr_binop(expr),
             Expr::Div { .. } => self.tc_expr_binop(expr),
         });
-        // TODO(vfoley): insert expr -> ty into symtable
+
+        let expr_copy = expr.clone();
+        self.expr_table.insert(expr_copy, ty);
+
         Ok(ty)
     }
 

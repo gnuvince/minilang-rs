@@ -39,7 +39,7 @@ pub enum Stmt {
     While { pos: Pos, expr: Expr, stmts: Vec<Stmt> },
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum Expr {
     Id { pos: Pos, id: String },
     Int { pos: Pos, value: i64 },
