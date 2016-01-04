@@ -7,7 +7,7 @@ use error::Error;
 use types::Type;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-struct Float(f64);
+struct Float(pub f64);
 
 impl Hash for Float {
     fn hash<H>(&self, state: &mut H) where H: Hasher {

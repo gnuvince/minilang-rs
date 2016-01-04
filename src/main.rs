@@ -5,6 +5,7 @@ mod scanner;
 mod types;
 mod parser;
 mod typecheck;
+mod cgen;
 
 use token::{Token, TokenType};
 use error::Error;
@@ -32,11 +33,12 @@ fn compile() -> Result<(), Error> {
     let mut parser = Parser::new(tokens);
     let program = try!(parser.parse_program());
 
-    println!("{:?}", program);
+    //println!("{:?}", program);
 
     let mut typechecker = TypeChecker::new();
     try!(typechecker.tc_program(&program));
 
+    /*
     println!("SYMBOL TABLE");
     println!("============");
     for (id, ty) in &typechecker.symtable {
@@ -50,6 +52,9 @@ fn compile() -> Result<(), Error> {
     for (expr, ty) in &typechecker.expr_table {
         println!("{:?}: {:?}", expr, ty);
     }
+    */
+
+    cgen::codegen(&program, &typechecker.symtable, &typechecker.expr_table);
 
     Ok(())
 }
