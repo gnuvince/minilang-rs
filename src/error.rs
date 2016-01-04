@@ -8,6 +8,7 @@ use types::Type;
 #[derive(Debug)]
 pub enum Error {
     GenericError,
+    UsageError,
 
     // Scanner errors
     IllegalCharacter(Pos, char),
@@ -27,6 +28,7 @@ impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Error::GenericError => { write!(f, "Generic Error") }
+            Error::UsageError => { write!(f, "Usage Error") }
 
             Error::IllegalCharacter(pos, c) => {
                 write!(f, "{}: Illegal character: '{}'", pos, c)
