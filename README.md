@@ -23,11 +23,11 @@ Design
 The crude flowchart below describes the overall flow of the compiler.
 
 
-         (stdin) --> [scanner] --> (tokens) --> [parser] --+
-                                                           |
-+-- (Symtable + Exprtable) <-- [type checker] <-- (AST) <--+
-|
-+--> [code generator] --> (stdout)
+             (stdin) --> [scanner] --> (tokens) --> [parser] --+
+                                                               |
+    +-- (Symtable + Exprtable) <-- [type checker] <-- (AST) <--+
+    |
+    +--> [code generator] --> (stdout)
 
 Modules
 -------
