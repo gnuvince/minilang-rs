@@ -6,6 +6,7 @@ use pos::Pos;
 use error::Error;
 use types::Type;
 
+/* newtype to allow putting an ExprFloat node in a hashmap */
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct Float(pub f64);
 
