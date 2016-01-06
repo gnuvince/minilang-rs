@@ -91,7 +91,7 @@ impl Scanner {
         }
 
         if self.peek() != '.' {
-            return Ok(self.valued_tok(TokenType::Int, val));
+            return Ok(self.lexeme_tok(TokenType::Int, val));
         }
 
         val.push(self.advance()); // Add decimal point.
@@ -100,7 +100,7 @@ impl Scanner {
             val.push(self.advance());
         }
 
-        Ok(self.valued_tok(TokenType::Float, val))
+        Ok(self.lexeme_tok(TokenType::Float, val))
     }
 
     // Scan alpha-numeric characters into an Id or a keyword token.
@@ -123,7 +123,7 @@ impl Scanner {
         if lexeme == "int" { return Ok(self.empty_tok(TokenType::TypeInt)); }
         if lexeme == "float" { return Ok(self.empty_tok(TokenType::TypeFloat)); }
 
-        Ok(self.valued_tok(TokenType::Id, lexeme))
+        Ok(self.lexeme_tok(TokenType::Id, lexeme))
     }
 
 
@@ -159,10 +159,10 @@ impl Scanner {
         t
     }
 
-    fn valued_tok(&self, t: TokenType, v: String) -> Token {
+    fn lexeme_tok(&self, t: TokenType, lexeme: String) -> Token {
         let t = Token {
             typ: t,
-            lexeme: Some(v),
+            lexeme: Some(lexeme),
             pos: self.start_pos,
         };
         t
