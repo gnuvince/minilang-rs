@@ -2,40 +2,35 @@ use error::Error;
 use pos::Pos;
 use token::{Token, TokenType};
 
-pub struct Scanner {
-    data: String,
-    index: usize,
+use std::str::Chars;
+use std::iter::{Fuse, Peekable};
+
+pub struct Scanner<'a> {
+    data: Peekable<Fuse<Chars<'a>>>,
     start_pos: Pos,
     curr_pos: Pos,
 }
 
-impl Scanner {
+impl<'a> Scanner<'a> {
     // Create a new scanner from a given program represented as a
     // String.
-    pub fn new(data: String) -> Self {
+    pub fn new<'b>(data: &'b str) -> Scanner<'b> {
         Scanner {
-            data: data,
-            index: 0,
+            data: data.chars().fuse().peekable(),
             start_pos: Pos { line: 1, col: 1 },
             curr_pos: Pos { line: 1, col: 1 },
         }
     }
 
     // Internal function: return the character at the current index.
-    fn peek(&self) -> char {
-        match self.data.chars().nth(self.index) {
-            Some(c) => c,
-            None => '\x00',
-        }
+    fn peek(&mut self) -> char {
+		self.data.peek().map(|&c|c).unwrap_or('\x00')
     }
 
     // Internal function: return the character at the current index
     // and increment the index by one.
     fn advance(&mut self) -> char {
         let c = self.peek();
-        if !self.is_eof() {
-            self.index += 1;
-        }
         if c == '\n' {
             self.curr_pos.line += 1;
             self.curr_pos.col = 1;
@@ -47,8 +42,8 @@ impl Scanner {
 
     // Internal function: verify if the end of the program has been
     // reached.
-    fn is_eof(&self) -> bool {
-        self.index >= self.data.len()
+    fn is_eof(&mut self) -> bool {
+        self.data.peek().is_some()
     }
 
 
