@@ -24,7 +24,7 @@ impl<'a> Scanner<'a> {
 
     // Internal function: return the character at the current index.
     fn peek(&mut self) -> char {
-		self.data.peek().map(|&c|c).unwrap_or('\x00')
+        self.data.peek().map(|&c|c).unwrap_or('\x00')
     }
 
     // Internal function: return the character at the current index
@@ -105,20 +105,29 @@ impl<'a> Scanner<'a> {
             lexeme.push(self.advance());
         }
 
-        if lexeme == "if" { return Ok(self.empty_tok(TokenType::If)); }
-        if lexeme == "then" { return Ok(self.empty_tok(TokenType::Then)); }
-        if lexeme == "else" { return Ok(self.empty_tok(TokenType::Else)); }
-        if lexeme == "end" { return Ok(self.empty_tok(TokenType::End)); }
-        if lexeme == "while" { return Ok(self.empty_tok(TokenType::While)); }
-        if lexeme == "do" { return Ok(self.empty_tok(TokenType::Do)); }
-        if lexeme == "done" { return Ok(self.empty_tok(TokenType::Done)); }
-        if lexeme == "read" { return Ok(self.empty_tok(TokenType::Read)); }
-        if lexeme == "print" { return Ok(self.empty_tok(TokenType::Print)); }
-        if lexeme == "var" { return Ok(self.empty_tok(TokenType::Var)); }
-        if lexeme == "int" { return Ok(self.empty_tok(TokenType::TypeInt)); }
-        if lexeme == "float" { return Ok(self.empty_tok(TokenType::TypeFloat)); }
+        let token_type = match &*lexeme {
+            "if" => TokenType::If,
+            "then" => TokenType::Then,
+            "else" => TokenType::Else,
+            "end" => TokenType::End,
+            "while" => TokenType::While,
+            "do" => TokenType::Do,
+            "done" => TokenType::Done,
+            "read" => TokenType::Read,
+            "print" => TokenType::Print,
+            "var" => TokenType::Var,
+            "int" => TokenType::TypeInt,
+            "float" => TokenType::TypeFloat,
+            _ => TokenType::Id,
+        };
 
-        Ok(self.lexeme_tok(TokenType::Id, lexeme))
+        let token = if token_type == TokenType::Id {
+            self.lexeme_tok(token_type, lexeme)
+        } else {
+            self.empty_tok(token_type)
+        };
+
+        Ok(token)
     }
 
 
