@@ -151,21 +151,19 @@ impl Scanner {
     }
 
     fn empty_tok(&self, t: TokenType) -> Token {
-        let t = Token {
+        Token {
             typ: t,
             lexeme: None,
             pos: self.start_pos,
-        };
-        t
+        }
     }
 
     fn lexeme_tok(&self, t: TokenType, lexeme: String) -> Token {
-        let t = Token {
+        Token {
             typ: t,
             lexeme: Some(lexeme),
             pos: self.start_pos,
-        };
-        t
+        }
     }
 
     fn single_char_tok(&mut self, t: TokenType) -> Token {
