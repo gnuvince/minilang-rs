@@ -37,13 +37,14 @@ impl<'a> Scanner<'a> {
         } else {
             self.curr_pos.col += 1
         }
+        let _ = self.data.next();
         c
     }
 
     // Internal function: verify if the end of the program has been
     // reached.
     fn is_eof(&mut self) -> bool {
-        self.data.peek().is_some()
+        !self.data.peek().is_some()
     }
 
 
