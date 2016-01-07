@@ -2,40 +2,35 @@ use error::Error;
 use pos::Pos;
 use token::{Token, TokenType};
 
-pub struct Scanner {
-    data: String,
-    index: usize,
+use std::str::Chars;
+use std::iter::{Fuse, Peekable};
+
+pub struct Scanner<'a> {
+    data: Peekable<Fuse<Chars<'a>>>,
     start_pos: Pos,
     curr_pos: Pos,
 }
 
-impl Scanner {
+impl<'a> Scanner<'a> {
     // Create a new scanner from a given program represented as a
     // String.
-    pub fn new(data: String) -> Self {
+    pub fn new<'b>(data: &'b str) -> Scanner<'b> {
         Scanner {
-            data: data,
-            index: 0,
+            data: data.chars().fuse().peekable(),
             start_pos: Pos { line: 1, col: 1 },
             curr_pos: Pos { line: 1, col: 1 },
         }
     }
 
     // Internal function: return the character at the current index.
-    fn peek(&self) -> char {
-        match self.data.chars().nth(self.index) {
-            Some(c) => c,
-            None => '\x00',
-        }
+    fn peek(&mut self) -> char {
+        self.data.peek().map(|&c|c).unwrap_or('\x00')
     }
 
     // Internal function: return the character at the current index
     // and increment the index by one.
     fn advance(&mut self) -> char {
         let c = self.peek();
-        if !self.is_eof() {
-            self.index += 1;
-        }
         if c == '\n' {
             self.curr_pos.line += 1;
             self.curr_pos.col = 1;
@@ -47,8 +42,8 @@ impl Scanner {
 
     // Internal function: verify if the end of the program has been
     // reached.
-    fn is_eof(&self) -> bool {
-        self.index >= self.data.len()
+    fn is_eof(&mut self) -> bool {
+        self.data.peek().is_some()
     }
 
 
@@ -110,20 +105,29 @@ impl Scanner {
             lexeme.push(self.advance());
         }
 
-        if lexeme == "if" { return Ok(self.empty_tok(TokenType::If)); }
-        if lexeme == "then" { return Ok(self.empty_tok(TokenType::Then)); }
-        if lexeme == "else" { return Ok(self.empty_tok(TokenType::Else)); }
-        if lexeme == "end" { return Ok(self.empty_tok(TokenType::End)); }
-        if lexeme == "while" { return Ok(self.empty_tok(TokenType::While)); }
-        if lexeme == "do" { return Ok(self.empty_tok(TokenType::Do)); }
-        if lexeme == "done" { return Ok(self.empty_tok(TokenType::Done)); }
-        if lexeme == "read" { return Ok(self.empty_tok(TokenType::Read)); }
-        if lexeme == "print" { return Ok(self.empty_tok(TokenType::Print)); }
-        if lexeme == "var" { return Ok(self.empty_tok(TokenType::Var)); }
-        if lexeme == "int" { return Ok(self.empty_tok(TokenType::TypeInt)); }
-        if lexeme == "float" { return Ok(self.empty_tok(TokenType::TypeFloat)); }
+        let token_type = match &*lexeme {
+            "if" => TokenType::If,
+            "then" => TokenType::Then,
+            "else" => TokenType::Else,
+            "end" => TokenType::End,
+            "while" => TokenType::While,
+            "do" => TokenType::Do,
+            "done" => TokenType::Done,
+            "read" => TokenType::Read,
+            "print" => TokenType::Print,
+            "var" => TokenType::Var,
+            "int" => TokenType::TypeInt,
+            "float" => TokenType::TypeFloat,
+            _ => TokenType::Id,
+        };
 
-        Ok(self.lexeme_tok(TokenType::Id, lexeme))
+        let token = if token_type == TokenType::Id {
+            self.lexeme_tok(token_type, lexeme)
+        } else {
+            self.empty_tok(token_type)
+        };
+
+        Ok(token)
     }
 
 

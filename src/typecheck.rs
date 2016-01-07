@@ -25,7 +25,7 @@ impl TypeChecker {
         self.tc_stmts(&p.stmts)
     }
 
-    fn tc_decls(&mut self, decls: &Vec<Decl>) -> Result<(), Error> {
+    fn tc_decls(&mut self, decls: &[Decl]) -> Result<(), Error> {
         for decl in decls {
             try!(self.tc_decl(&decl));
         }
@@ -41,7 +41,7 @@ impl TypeChecker {
         }
     }
 
-    fn tc_stmts(&mut self, stmts: &Vec<Stmt>) -> Result<(), Error> {
+    fn tc_stmts(&mut self, stmts: &[Stmt]) -> Result<(), Error> {
         for stmt in stmts {
             try!(self.tc_stmt(&stmt));
         }

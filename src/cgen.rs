@@ -37,7 +37,7 @@ impl<'a> Generator<'a> {
         }
     }
 
-    fn codegen_stmts(&mut self, stmts: &Vec<Stmt>) {
+    fn codegen_stmts(&mut self, stmts: &[Stmt]) {
         for stmt in stmts {
             self.codegen_stmt(&stmt);
         }
