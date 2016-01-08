@@ -1,4 +1,4 @@
-use parser::*;
+use ast::*;
 use types::Type;
 use typecheck::{Symtable, Exprtable};
 

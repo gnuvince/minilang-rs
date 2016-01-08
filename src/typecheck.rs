@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use parser::*;
+use ast::*;
 use types::Type;
 use error::Error;
 

@@ -3,6 +3,7 @@ mod pos;
 mod token;
 mod scanner;
 mod types;
+mod ast;
 mod parser;
 mod typecheck;
 mod cgen;
