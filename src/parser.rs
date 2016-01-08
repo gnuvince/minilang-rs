@@ -8,7 +8,7 @@ use types::Type;
 
 /* newtype to allow putting an ExprFloat node in a hashmap */
 #[derive(Debug, Clone, Copy, PartialEq)]
-struct Float(pub f64);
+pub struct Float(pub f64);
 
 impl Hash for Float {
     fn hash<H>(&self, state: &mut H) where H: Hasher {
@@ -80,12 +80,44 @@ pub enum Binop {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub struct ExprId {
+    pub pos: Pos,
+    pub id: String
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub struct ExprInt {
+    pub pos: Pos,
+    pub value: i64,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub struct ExprFloat {
+    pub pos: Pos,
+    pub value: Float,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub struct ExprNegate {
+    pub pos: Pos,
+    pub expr: Box<Expr>,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub struct ExprBinop {
+    pub pos: Pos,
+    pub op: Binop,
+    pub expr1: Box<Expr>,
+    pub expr2: Box<Expr>,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum Expr {
-    Id { pos: Pos, id: String },
-    Int { pos: Pos, value: i64 },
-    Float { pos: Pos, value: Float },
-    Negate { pos: Pos, expr: Box<Expr> },
-    Binop { pos: Pos, op: Binop, expr1: Box<Expr>, expr2: Box<Expr> },
+    Id(ExprId),
+    Int(ExprInt),
+    Float(ExprFloat),
+    Negate(ExprNegate),
+    Binop(ExprBinop),
 }
 
 #[derive(Debug)]
@@ -279,21 +311,21 @@ impl Parser {
             if self.peek(TokenType::Plus) {
                 try!(self.eat(TokenType::Plus));
                 let t2 = try!(self.parse_term());
-                term = Expr::Binop {
+                term = Expr::Binop(ExprBinop {
                     pos: pos,
                     op: Binop::Add,
                     expr1: Box::new(term),
                     expr2: Box::new(t2)
-                };
+                });
             } else if self.peek(TokenType::Minus) {
                 try!(self.eat(TokenType::Minus));
                 let t2 = try!(self.parse_term());
-                term = Expr::Binop {
+                term = Expr::Binop(ExprBinop {
                     pos: pos,
                     op: Binop::Sub,
                     expr1: Box::new(term),
                     expr2: Box::new(t2)
-                };
+                });
             } else {
                 return Err(Error::UnexpectedToken(
                     self.curr_token(),
@@ -310,21 +342,21 @@ impl Parser {
             if self.peek(TokenType::Star) {
                 try!(self.eat(TokenType::Star));
                 let f2 = try!(self.parse_factor());
-                fact = Expr::Binop {
+                fact = Expr::Binop(ExprBinop {
                     pos: pos,
                     op: Binop::Mul,
                     expr1: Box::new(fact),
                     expr2: Box::new(f2),
-                };
+                });
             } else if self.peek(TokenType::Slash) {
                 try!(self.eat(TokenType::Slash));
                 let f2 = try!(self.parse_factor());
-                fact = Expr::Binop {
+                fact = Expr::Binop(ExprBinop {
                     pos: pos,
                     op: Binop::Div,
                     expr1: Box::new(fact),
                     expr2: Box::new(f2),
-                };
+                });
             } else {
                 return Err(Error::UnexpectedToken(
                     self.curr_token(),
@@ -350,7 +382,7 @@ impl Parser {
         } else if self.peek(TokenType::Minus) {
             try!(self.eat(TokenType::Minus));
             let e = try!(self.parse_expr());
-            Ok(Expr::Negate { pos: pos, expr: Box::new(e) })
+            Ok(Expr::Negate(ExprNegate { pos: pos, expr: Box::new(e) }))
         } else {
             Err(Error::UnexpectedToken(
                 self.curr_token(),
@@ -363,7 +395,7 @@ impl Parser {
         let pos = self.token_pos();
         let lexeme = try!(self.eat_lexeme(TokenType::Int));
         match lexeme.parse::<i64>() {
-            Ok(n) => Ok(Expr::Int { pos: pos, value: n }),
+            Ok(n) => Ok(Expr::Int (ExprInt { pos: pos, value: n })),
             Err(_) => Err(Error::InvalidIntLiteral(pos, lexeme))
         }
     }
@@ -372,7 +404,7 @@ impl Parser {
         let pos = self.token_pos();
         let lexeme = try!(self.eat_lexeme(TokenType::Float));
         match lexeme.parse::<f64>() {
-            Ok(n) => Ok(Expr::Float { pos: pos, value: Float(n) }),
+            Ok(n) => Ok(Expr::Float(ExprFloat { pos: pos, value: Float(n) })),
             Err(_) => Err(Error::InvalidFloatLiteral(pos, lexeme))
         }
     }
@@ -380,7 +412,7 @@ impl Parser {
     fn parse_id(&mut self) -> Result<Expr, Error> {
         let pos = self.token_pos();
         let lexeme = try!(self.eat_lexeme(TokenType::Id));
-        Ok(Expr::Id { pos: pos, id: lexeme })
+        Ok(Expr::Id(ExprId { pos: pos, id: lexeme }))
     }
 
     fn is_stmt_start(&self) -> bool {

@@ -109,11 +109,11 @@ impl TypeChecker {
 
     fn tc_expr(&mut self, expr: &Expr) -> Result<Type, Error> {
         let ty = try!(match *expr {
-            Expr::Int { .. } => Ok(Type::Int),
-            Expr::Float { .. } => Ok(Type::Float),
-            Expr::Id { .. } => self.tc_expr_id(expr),
-            Expr::Negate { .. } => self.tc_expr_negate(expr),
-            Expr::Binop { .. } => self.tc_expr_binop(expr),
+            Expr::Int(_) => Ok(Type::Int),
+            Expr::Float(_) => Ok(Type::Float),
+            Expr::Id(ref expr_) => self.tc_expr_id(expr_),
+            Expr::Negate(ref expr_) => self.tc_expr_negate(expr_),
+            Expr::Binop(ref expr_) => self.tc_expr_binop(expr_),
         });
 
         let expr_copy = expr.clone();
@@ -122,39 +122,26 @@ impl TypeChecker {
         Ok(ty)
     }
 
-    fn tc_expr_id(&mut self, expr: &Expr) -> Result<Type, Error> {
-        if let Expr::Id { pos, ref id } = *expr {
-            match self.symtable.get(id) {
-                Some(ty) => Ok(*ty),
-                None => Err(Error::UndeclaredVariable(pos, id.clone())),
-            }
-        } else {
-            Err(Error::GenericError)
+    fn tc_expr_id(&mut self, expr: &ExprId) -> Result<Type, Error> {
+        match self.symtable.get(&expr.id) {
+            Some(ty) => Ok(*ty),
+            None => Err(Error::UndeclaredVariable(expr.pos, expr.id.clone())),
         }
     }
 
-    fn tc_expr_negate(&mut self, expr: &Expr) -> Result<Type, Error> {
-        if let Expr::Negate { ref expr, .. } = *expr {
-            self.tc_expr(expr)
-        } else {
-            Err(Error::GenericError)
-        }
+    fn tc_expr_negate(&mut self, expr: &ExprNegate) -> Result<Type, Error> {
+        self.tc_expr(&expr.expr)
     }
 
-    fn tc_expr_binop(&mut self, expr: &Expr) -> Result<Type, Error> {
-        match *expr {
-            Expr::Binop { ref expr1, ref expr2, .. } => {
-                let t1 = try!(self.tc_expr(expr1));
-                let t2 = try!(self.tc_expr(expr2));
+    fn tc_expr_binop(&mut self, expr: &ExprBinop) -> Result<Type, Error> {
+        let t1 = try!(self.tc_expr(&expr.expr1));
+        let t2 = try!(self.tc_expr(&expr.expr2));
 
-                match (t1, t2) {
-                    (Type::Int   , Type::Int)   => Ok(Type::Int),
-                    (Type::Int   , Type::Float) => Ok(Type::Float),
-                    (Type::Float , Type::Int)   => Ok(Type::Float),
-                    (Type::Float , Type::Float) => Ok(Type::Float),
-                }
-            }
-            _ => Err(Error::GenericError)
+        match (t1, t2) {
+            (Type::Int   , Type::Int)   => Ok(Type::Int),
+            (Type::Int   , Type::Float) => Ok(Type::Float),
+            (Type::Float , Type::Int)   => Ok(Type::Float),
+            (Type::Float , Type::Float) => Ok(Type::Float),
         }
     }
 }

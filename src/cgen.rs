@@ -93,22 +93,22 @@ impl<'a> Generator<'a> {
             None => "/* fail */",
         };
         match *expr {
-            Expr::Int { value: v, .. } => { println!("{} {} = {};", ty_str, tmp, v); }
-            Expr::Float { value: v, .. } => { println!("{} {} = {};", ty_str, tmp, v.0); }
-            Expr::Id { ref id, .. } => { return id.clone(); }
-            Expr::Negate { ref expr, .. } => {
-                let id1 = self.codegen_expr(expr);
+            Expr::Int(ref expr_) => { println!("{} {} = {};", ty_str, tmp, expr_.value); }
+            Expr::Float(ref expr_) => { println!("{} {} = {};", ty_str, tmp, expr_.value.0); }
+            Expr::Id(ref expr_) => { return expr_.id.clone(); }
+            Expr::Negate(ref expr_) => {
+                let id1 = self.codegen_expr(&expr_.expr);
                 println!("{} {} = -{};", ty_str, tmp, id1);
             }
-            Expr::Binop { op, ref expr1, ref expr2, .. } => {
-                let op_char = match op {
+            Expr::Binop(ref expr_) => {
+                let op_char = match expr_.op {
                     Binop::Add => '+',
                     Binop::Sub => '-',
                     Binop::Mul => '*',
                     Binop::Div => '/',
                 };
-                let id1 = self.codegen_expr(expr1);
-                let id2 = self.codegen_expr(expr2);
+                let id1 = self.codegen_expr(&expr_.expr1);
+                let id2 = self.codegen_expr(&expr_.expr2);
                 println!("{} {} = {} {} {};", ty_str, tmp, id1, op_char, id2);
             }
         }
