@@ -19,11 +19,8 @@ impl Hash for Float {
         }
     }
 }
-
 impl Eq for Float {
-
 }
-
 #[derive(Debug)]
 pub struct Decl {
     pub pos: Pos,
@@ -32,12 +29,46 @@ pub struct Decl {
 }
 
 #[derive(Debug)]
+pub struct StmtRead {
+    pub pos: Pos,
+    pub id: String
+}
+
+#[derive(Debug)]
+pub struct StmtPrint {
+    pub pos: Pos,
+    pub expr: Expr
+}
+
+#[derive(Debug)]
+pub struct StmtAssign {
+    pub pos: Pos,
+    pub id: String,
+    pub expr: Expr
+}
+
+#[derive(Debug)]
+pub struct StmtIf {
+    pub pos: Pos,
+    pub expr: Expr,
+    pub then_stmts: Vec<Stmt>,
+    pub else_stmts: Vec<Stmt>
+}
+
+#[derive(Debug)]
+pub struct StmtWhile {
+    pub pos: Pos,
+    pub expr: Expr,
+    pub stmts: Vec<Stmt>
+}
+
+#[derive(Debug)]
 pub enum Stmt {
-    Read { pos: Pos, id: String },
-    Print { pos: Pos, expr: Expr },
-    Assign { pos: Pos, id: String, expr: Expr },
-    If { pos: Pos, expr: Expr, then_stmts: Vec<Stmt>, else_stmts: Vec<Stmt> },
-    While { pos: Pos, expr: Expr, stmts: Vec<Stmt> },
+    Read(StmtRead),
+    Print(StmtPrint),
+    Assign(StmtAssign),
+    If(StmtIf),
+    While(StmtWhile),
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
@@ -190,7 +221,7 @@ impl Parser {
         try!(self.eat(TokenType::Read));
         let id = try!(self.eat_lexeme(TokenType::Id));
         try!(self.eat(TokenType::Semicolon));
-        Ok(Stmt::Read { pos: pos, id: id })
+        Ok(Stmt::Read(StmtRead { pos: pos, id: id }))
     }
 
     fn parse_print(&mut self) -> Result<Stmt, Error> {
@@ -198,7 +229,7 @@ impl Parser {
         try!(self.eat(TokenType::Print));
         let e = try!(self.parse_expr());
         try!(self.eat(TokenType::Semicolon));
-        Ok(Stmt::Print { pos: pos, expr: e })
+        Ok(Stmt::Print(StmtPrint { pos: pos, expr: e }))
     }
 
     fn parse_assign(&mut self) -> Result<Stmt, Error> {
@@ -207,7 +238,7 @@ impl Parser {
         try!(self.eat(TokenType::Equal));
         let e = try!(self.parse_expr());
         try!(self.eat(TokenType::Semicolon));
-        Ok(Stmt::Assign { pos: pos, id: id, expr: e })
+        Ok(Stmt::Assign(StmtAssign { pos: pos, id: id, expr: e }))
     }
 
     fn parse_if(&mut self) -> Result<Stmt, Error> {
@@ -219,12 +250,12 @@ impl Parser {
         try!(self.eat(TokenType::Else));
         let else_stmts = try!(self.parse_stmts());
         try!(self.eat(TokenType::End));
-        Ok(Stmt::If {
+        Ok(Stmt::If(StmtIf {
             pos: pos,
             expr: e,
             then_stmts: then_stmts,
             else_stmts: else_stmts,
-        })
+        }))
     }
 
     fn parse_while(&mut self) -> Result<Stmt, Error> {
@@ -234,11 +265,11 @@ impl Parser {
         try!(self.eat(TokenType::Do));
         let stmts = try!(self.parse_stmts());
         try!(self.eat(TokenType::Done));
-        Ok(Stmt::While {
+        Ok(Stmt::While(StmtWhile {
             pos: pos,
             expr: e,
             stmts: stmts,
-        })
+        }))
     }
 
     fn parse_expr(&mut self) -> Result<Expr, Error> {

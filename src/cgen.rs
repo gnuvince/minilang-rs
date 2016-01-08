@@ -1,4 +1,4 @@
-use parser::{Program, Stmt, Expr, Binop};
+use parser::*;
 use types::Type;
 use typecheck::{Symtable, Exprtable};
 
@@ -45,37 +45,35 @@ impl<'a> Generator<'a> {
 
     fn codegen_stmt(&mut self, stmt: &Stmt) {
         match *stmt {
-            Stmt::Read { ref id, .. } => {
-                match self.symtable.get(id) {
-                    Some(&Type::Int) => { println!("scanf(\"%d\", &{});", id); }
-                    Some(&Type::Float) => { println!("scanf(\"%f\", &{});", id); }
+            Stmt::Read(ref stmt_) => {
+                match self.symtable.get(&stmt_.id) {
+                    Some(ty) => { println!("scanf(\"%{}\", &{});", ty.format_letter(), stmt_.id); }
                     None => { println!("/* read error */"); }
                 }
             }
-            Stmt::Print { ref expr, .. } => {
-                let tmp = self.codegen_expr(expr);
-                match self.exprtable.get(expr) {
-                    Some(&Type::Int) => { println!("printf(\"%d\\n\", {});", tmp); }
-                    Some(&Type::Float) => { println!("printf(\"%f\\n\", {});", tmp); }
+            Stmt::Print(ref stmt_) => {
+                let tmp = self.codegen_expr(&stmt_.expr);
+                match self.exprtable.get(&stmt_.expr) {
+                    Some(ty) => { println!("printf(\"%{}\\n\", {});", ty.format_letter(), tmp); }
                     None => { println!("/* read error */"); }
                 }
             }
-            Stmt::Assign { ref id, ref expr, .. } => {
-                let tmp = self.codegen_expr(expr);
-                println!("{} = {};", id, tmp);
+            Stmt::Assign(ref stmt_) => {
+                let tmp = self.codegen_expr(&stmt_.expr);
+                println!("{} = {};", stmt_.id, tmp);
             }
-            Stmt::If { ref expr, ref then_stmts, ref else_stmts, .. } => {
-                let tmp = self.codegen_expr(expr);
+            Stmt::If(ref stmt_) => {
+                let tmp = self.codegen_expr(&stmt_.expr);
                 println!("if ({}) {{", tmp);
-                self.codegen_stmts(then_stmts);
+                self.codegen_stmts(&stmt_.then_stmts);
                 println!("}} else {{");
-                self.codegen_stmts(else_stmts);
+                self.codegen_stmts(&stmt_.else_stmts);
                 println!("}}");
             }
-            Stmt::While { ref expr, ref stmts, .. } => {
-                let tmp = self.codegen_expr(expr);
+            Stmt::While(ref stmt_) => {
+                let tmp = self.codegen_expr(&stmt_.expr);
                 println!("while ({}) {{", tmp);
-                self.codegen_stmts(stmts);
+                self.codegen_stmts(&stmt_.stmts);
                 println!("}}");
             }
         }

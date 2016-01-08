@@ -3,10 +3,10 @@ use pos::Pos;
 use token::{Token, TokenType};
 
 use std::str::Chars;
-use std::iter::{Fuse, Peekable};
+use std::iter::Peekable;
 
 pub struct Scanner<'a> {
-    data: Peekable<Fuse<Chars<'a>>>,
+    data: Peekable<Chars<'a>>,
     start_pos: Pos,
     curr_pos: Pos,
 }
@@ -16,7 +16,7 @@ impl<'a> Scanner<'a> {
     // String.
     pub fn new<'b>(data: &'b str) -> Scanner<'b> {
         Scanner {
-            data: data.chars().fuse().peekable(),
+            data: data.chars().peekable(),
             start_pos: Pos { line: 1, col: 1 },
             curr_pos: Pos { line: 1, col: 1 },
         }

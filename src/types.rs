@@ -14,3 +14,12 @@ impl fmt::Display for Type {
         }
     }
 }
+
+impl Type {
+    pub fn format_letter(&self) -> char {
+        match *self {
+            Type::Int => 'd',
+            Type::Float => 'f',
+        }
+    }
+}

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use parser::{Program, Decl, Stmt, Expr};
+use parser::*;
 use types::Type;
 use error::Error;
 
@@ -50,80 +50,60 @@ impl TypeChecker {
 
     fn tc_stmt(&mut self, stmt: &Stmt) -> Result<(), Error> {
         match *stmt {
-            Stmt::Assign { .. } => self.tc_stmt_assign(stmt),
-            Stmt::Read { .. } => self.tc_stmt_read(stmt),
-            Stmt::Print { .. } => self.tc_stmt_print(stmt),
-            Stmt::If { .. } => self.tc_stmt_if(stmt),
-            Stmt::While { .. } => self.tc_stmt_while(stmt),
+            Stmt::Assign(ref stmt_) => self.tc_stmt_assign(stmt_),
+            Stmt::Read(ref stmt_) => self.tc_stmt_read(stmt_),
+            Stmt::Print(ref stmt_) => self.tc_stmt_print(stmt_),
+            Stmt::If(ref stmt_) => self.tc_stmt_if(stmt_),
+            Stmt::While(ref stmt_) => self.tc_stmt_while(stmt_),
         }
     }
 
-    fn tc_stmt_assign(&mut self, stmt: &Stmt) -> Result<(), Error> {
-        if let Stmt::Assign { pos, ref id, ref expr } = *stmt {
-            let expr_ty = try!(self.tc_expr(expr));
-            match self.symtable.get(id) {
-                Some(&id_ty) => {
-                    match (id_ty, expr_ty) {
-                        (Type::Int, Type::Int) => Ok(()),
-                        (Type::Int, Type::Float) =>
-                            Err(Error::UnexpectedType { pos: pos, expected: Type::Int, actual: Type::Float }),
-                        (Type::Float, Type::Int) => Ok(()),
-                        (Type::Float, Type::Float) => Ok(()),
-                    }
+    fn tc_stmt_assign(&mut self, stmt: &StmtAssign) -> Result<(), Error> {
+        let expr_ty = try!(self.tc_expr(&stmt.expr));
+        match self.symtable.get(&stmt.id) {
+            Some(&id_ty) => {
+                match (id_ty, expr_ty) {
+                    (Type::Int, Type::Int) => Ok(()),
+                    (Type::Int, Type::Float) =>
+                        Err(Error::UnexpectedType { pos: stmt.pos, expected: Type::Int, actual: Type::Float }),
+                    (Type::Float, Type::Int) => Ok(()),
+                    (Type::Float, Type::Float) => Ok(()),
                 }
-                None => Err(Error::UndeclaredVariable(pos, id.clone()))
             }
-        } else {
-            Err(Error::GenericError)
+            None => Err(Error::UndeclaredVariable(stmt.pos, stmt.id.clone()))
         }
     }
 
-    fn tc_stmt_read(&mut self, stmt: &Stmt) -> Result<(), Error> {
-        if let Stmt::Read { pos, ref id } = *stmt {
-            if self.symtable.contains_key(id) {
-                Ok(())
-            } else {
-                Err(Error::UndeclaredVariable(pos, id.clone()))
-            }
-        } else {
-            Err(Error::GenericError)
-        }
-    }
-
-    fn tc_stmt_print(&mut self, stmt: &Stmt) -> Result<(), Error> {
-        if let Stmt::Print { ref expr, .. } = *stmt {
-            try!(self.tc_expr(expr));
+    fn tc_stmt_read(&mut self, stmt: &StmtRead) -> Result<(), Error> {
+        if self.symtable.contains_key(&stmt.id) {
             Ok(())
         } else {
-            Err(Error::GenericError)
+            Err(Error::UndeclaredVariable(stmt.pos, stmt.id.clone()))
         }
     }
 
-    fn tc_stmt_if(&mut self, stmt: &Stmt) -> Result<(), Error> {
-        if let Stmt::If { pos, ref expr, ref then_stmts, ref else_stmts } = *stmt {
-            let t = try!(self.tc_expr(expr));
-            match t {
-                Type::Int => {
-                    try!(self.tc_stmts(then_stmts));
-                    try!(self.tc_stmts(else_stmts));
-                    Ok(())
-                }
-                _ => { Err(Error::UnexpectedType{ pos: pos, expected: Type::Int, actual: t }) }
+    fn tc_stmt_print(&mut self, stmt: &StmtPrint) -> Result<(), Error> {
+        try!(self.tc_expr(&stmt.expr));
+        Ok(())
+    }
+
+    fn tc_stmt_if(&mut self, stmt: &StmtIf) -> Result<(), Error> {
+        let t = try!(self.tc_expr(&stmt.expr));
+        match t {
+            Type::Int => {
+                try!(self.tc_stmts(&stmt.then_stmts));
+                try!(self.tc_stmts(&stmt.else_stmts));
+                Ok(())
             }
-        } else {
-            Err(Error::GenericError)
+            _ => { Err(Error::UnexpectedType{ pos: stmt.pos, expected: Type::Int, actual: t }) }
         }
     }
 
-    fn tc_stmt_while(&mut self, stmt: &Stmt) -> Result<(), Error> {
-        if let Stmt::While { pos, ref expr, ref stmts } = *stmt {
-            let t = try!(self.tc_expr(expr));
-            match t {
-                Type::Int => { self.tc_stmts(stmts) }
-                _ => { Err(Error::UnexpectedType { pos: pos, expected: Type::Int, actual: t }) }
-            }
-        } else {
-            Err(Error::GenericError)
+    fn tc_stmt_while(&mut self, stmt: &StmtWhile) -> Result<(), Error> {
+        let t = try!(self.tc_expr(&stmt.expr));
+        match t {
+            Type::Int => { self.tc_stmts(&stmt.stmts) }
+            _ => { Err(Error::UnexpectedType { pos: stmt.pos, expected: Type::Int, actual: t }) }
         }
     }
 
