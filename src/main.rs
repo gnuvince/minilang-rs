@@ -28,7 +28,6 @@ enum Command {
 fn compile(cmd: Command) -> Result<(), Error> {
     let mut data = String::new();
     let _ = stdin().read_to_string(&mut data);
-    let data = data;
     let mut scanner = Scanner::new(&data);
 
     let mut tokens: Vec<Token> = Vec::new();
