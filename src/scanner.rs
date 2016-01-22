@@ -73,6 +73,7 @@ impl<'a> Scanner<'a> {
             ')' => { Ok(self.single_char_tok(TokenType::RParen)) }
             ':' => { Ok(self.single_char_tok(TokenType::Colon)) }
             ';' => { Ok(self.single_char_tok(TokenType::Semicolon)) }
+            ',' => { Ok(self.single_char_tok(TokenType::Comma)) }
             c if c.is_digit(10) => { self.scan_int_or_float() }
             c if is_id_start(c) => { self.scan_id_or_keyword() }
             c   => { Err(Error::IllegalCharacter(self.curr_pos, c)) }
