@@ -153,14 +153,10 @@ impl Parser {
             let ty = try!(self.eat_type());
             params.push((id, ty));
 
-            if self.peek(TokenType::RParen) {
-                break;
-            } else if self.peek(TokenType::Comma) {
+            if self.peek(TokenType::Comma) {
                 try!(self.eat(TokenType::Comma));
             } else {
-                return Err(Error::UnexpectedToken(
-                    self.curr_token(),
-                    vec![TokenType::Comma, TokenType::RParen]));
+                break;
             }
         }
         Ok(params)
