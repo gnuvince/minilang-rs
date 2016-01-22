@@ -52,7 +52,7 @@ fn compile(cmd: Command) -> Result<(), Error> {
     let program = try!(parser.parse_program());
 
     if cmd == Command::Parse {
-        println!("{:?}", program);
+        println!("{:#?}", program);
         return Ok(());
     }
 

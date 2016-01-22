@@ -33,12 +33,13 @@ impl TypeChecker {
     }
 
     fn tc_decl(&mut self, decl: &Decl) -> Result<(), Error> {
-        if self.symtable.contains_key(&decl.id) {
-            Err(Error::DuplicateVariable(decl.pos, decl.id.clone()))
-        } else {
-            self.symtable.insert(decl.id.clone(), decl.ty);
-            Ok(())
-        }
+        // if self.symtable.contains_key(&decl.id) {
+        //     Err(Error::DuplicateVariable(decl.pos, decl.id.clone()))
+        // } else {
+        //     self.symtable.insert(decl.id.clone(), decl.ty);
+        //     Ok(())
+        // }
+        unimplemented!()
     }
 
     fn tc_stmts(&mut self, stmts: &[Stmt]) -> Result<(), Error> {
@@ -55,6 +56,7 @@ impl TypeChecker {
             Stmt::Print(ref stmt_) => self.tc_stmt_print(stmt_),
             Stmt::If(ref stmt_) => self.tc_stmt_if(stmt_),
             Stmt::While(ref stmt_) => self.tc_stmt_while(stmt_),
+            Stmt::Return(_) => Ok(()),
         }
     }
 

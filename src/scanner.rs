@@ -119,6 +119,8 @@ impl<'a> Scanner<'a> {
             "var" => TokenType::Var,
             "int" => TokenType::TypeInt,
             "float" => TokenType::TypeFloat,
+            "function" => TokenType::Function,
+            "return" => TokenType::Return,
             _ => TokenType::Id,
         };
 

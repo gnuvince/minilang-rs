@@ -19,11 +19,28 @@ impl Hash for Float {
 }
 impl Eq for Float {
 }
+
 #[derive(Debug)]
-pub struct Decl {
+pub enum Decl {
+    Var(VarDecl),
+    Fun(FunDecl),
+}
+
+#[derive(Debug)]
+pub struct VarDecl {
     pub pos: Pos,
     pub id: String,
     pub ty: Type,
+}
+
+#[derive(Debug)]
+pub struct FunDecl {
+    pub pos: Pos,
+    pub id: String,
+    pub params: Vec<(String, Type)>,
+    pub ty: Type,
+    pub decls: Vec<VarDecl>,
+    pub stmts: Vec<Stmt>,
 }
 
 #[derive(Debug)]
@@ -61,12 +78,19 @@ pub struct StmtWhile {
 }
 
 #[derive(Debug)]
+pub struct StmtReturn {
+    pub pos: Pos,
+    pub expr: Expr,
+}
+
+#[derive(Debug)]
 pub enum Stmt {
     Read(StmtRead),
     Print(StmtPrint),
     Assign(StmtAssign),
     If(StmtIf),
     While(StmtWhile),
+    Return(StmtReturn),
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]

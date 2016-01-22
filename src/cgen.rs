@@ -95,6 +95,10 @@ impl<'a> Generator<'a> {
                 self.codegen_stmts(&stmt_.stmts);
                 println!("}}");
             }
+            Stmt::Return(ref stmt_) => {
+                let expr_ret = self.codegen_expr(&stmt_.expr);
+                println!("return {};", expr_ret);
+            }
         }
     }
 

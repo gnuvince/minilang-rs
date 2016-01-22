@@ -81,7 +81,7 @@ impl Parser {
 
     fn parse_decls(&mut self) -> Result<Vec<Decl>, Error> {
         let mut decls: Vec<Decl> = Vec::new();
-        while self.peek(TokenType::Var) {
+        while self.peek(TokenType::Var) || self.peek(TokenType::Function) {
             let decl = try!(self.parse_decl());
             decls.push(decl);
         }
@@ -89,13 +89,81 @@ impl Parser {
     }
 
     fn parse_decl(&mut self) -> Result<Decl, Error> {
+        if self.peek(TokenType::Var) {
+            let vd = try!(self.parse_var_decl());
+            Ok(Decl::Var(vd))
+        } else if self.peek(TokenType::Function) {
+            let fd = try!(self.parse_func_decl());
+            Ok(Decl::Fun(fd))
+        } else {
+            Err(Error::UnexpectedToken(
+                self.curr_token(),
+                vec![TokenType::Var, TokenType::Function]))
+        }
+    }
+
+    fn parse_var_decls(&mut self) -> Result<Vec<VarDecl>, Error> {
+        let mut vds = Vec::new();
+        while self.peek(TokenType::Var) {
+            let vd = try!(self.parse_var_decl());
+            vds.push(vd);
+        }
+        Ok(vds)
+    }
+
+    fn parse_var_decl(&mut self) -> Result<VarDecl, Error> {
         let pos = self.token_pos();
         try!(self.eat(TokenType::Var));
         let id = try!(self.eat_lexeme(TokenType::Id));
         try!(self.eat(TokenType::Colon));
         let ty = try!(self.eat_type());
         try!(self.eat(TokenType::Semicolon));
-        Ok(Decl { pos: pos, id: id, ty: ty })
+        Ok(VarDecl { pos: pos, id: id, ty: ty })
+    }
+
+    fn parse_func_decl(&mut self) -> Result<FunDecl, Error> {
+        let pos = self.token_pos();
+        try!(self.eat(TokenType::Function));
+        let id = try!(self.eat_lexeme(TokenType::Id));
+        try!(self.eat(TokenType::LParen));
+        let params = try!(self.parse_params());
+        try!(self.eat(TokenType::RParen));
+        try!(self.eat(TokenType::Colon));
+        let ty = try!(self.eat_type());
+        let decls = try!(self.parse_var_decls());
+        let stmts = try!(self.parse_stmts());
+        try!(self.eat(TokenType::End));
+
+        Ok(FunDecl {
+            pos: pos,
+            id: id,
+            params: params,
+            ty: ty,
+            decls: decls,
+            stmts: stmts,
+        })
+    }
+
+
+    fn parse_params(&mut self) -> Result<Vec<(String, Type)>, Error> {
+        let mut params = Vec::new();
+        while self.peek(TokenType::Id) {
+            let id = try!(self.eat_lexeme(TokenType::Id));
+            try!(self.eat(TokenType::Colon));
+            let ty = try!(self.eat_type());
+            params.push((id, ty));
+
+            if self.peek(TokenType::RParen) {
+                break;
+            } else if self.peek(TokenType::Comma) {
+                try!(self.eat(TokenType::Comma));
+            } else {
+                return Err(Error::UnexpectedToken(
+                    self.curr_token(),
+                    vec![TokenType::Comma, TokenType::RParen]));
+            }
+        }
+        Ok(params)
     }
 
 
@@ -119,6 +187,8 @@ impl Parser {
             self.parse_if()
         } else if self.peek(TokenType::While) {
             self.parse_while()
+        } else if self.peek(TokenType::Return) {
+            self.parse_return()
         } else {
             Err(Error::UnexpectedToken(
                 self.curr_token(),
@@ -180,6 +250,17 @@ impl Parser {
             pos: pos,
             expr: e,
             stmts: stmts,
+        }))
+    }
+
+    fn parse_return(&mut self) -> Result<Stmt, Error> {
+        let pos = self.token_pos();
+        try!(self.eat(TokenType::Return));
+        let expr = try!(self.parse_expr());
+        try!(self.eat(TokenType::Semicolon));
+        Ok(Stmt::Return(StmtReturn {
+            pos: pos,
+            expr: expr,
         }))
     }
 
@@ -299,7 +380,8 @@ impl Parser {
             self.peek(TokenType::If) ||
             self.peek(TokenType::While) ||
             self.peek(TokenType::Read) ||
-            self.peek(TokenType::Print)
+            self.peek(TokenType::Print) ||
+            self.peek(TokenType::Return)
     }
 
     fn next_is_add(&self) -> bool {

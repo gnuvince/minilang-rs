@@ -1,0 +1,14 @@
+function fact(n: int): int
+  var p: int;
+  p = 1;
+  while n do
+    p = p * n;
+    n = n - 1;
+  done
+  return p;
+end
+
+var n: int;
+
+read n;
+print n;

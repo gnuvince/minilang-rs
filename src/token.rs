@@ -19,6 +19,7 @@ pub enum TokenType {
     RParen,
     Colon,
     Semicolon,
+    Comma,
 
     // Keywords
     If,
@@ -33,6 +34,8 @@ pub enum TokenType {
     Var,
     TypeInt,
     TypeFloat,
+    Function,
+    Return,
 
     // Others
     Eof,
@@ -53,6 +56,7 @@ impl fmt::Display for TokenType {
             TokenType::RParen => write!(f, "')'"),
             TokenType::Colon => write!(f, "':'"),
             TokenType::Semicolon => write!(f, "';'"),
+            TokenType::Comma => write!(f, "','"),
             TokenType::If => write!(f, "'if'"),
             TokenType::Then => write!(f, "'then'"),
             TokenType::Else => write!(f, "'else'"),
@@ -65,6 +69,8 @@ impl fmt::Display for TokenType {
             TokenType::Var => write!(f, "'var'"),
             TokenType::TypeInt => write!(f, "'int'"),
             TokenType::TypeFloat => write!(f, "'float'"),
+            TokenType::Function => write!(f, "'function'"),
+            TokenType::Return => write!(f, "'return'"),
             TokenType::Eof => write!(f, "<eof>"),
         }
     }
