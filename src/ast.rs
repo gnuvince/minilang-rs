@@ -80,7 +80,7 @@ pub struct StmtWhile {
 #[derive(Debug)]
 pub struct StmtReturn {
     pub pos: Pos,
-    pub expr: Expr,
+    pub expr: Option<Expr>,
 }
 
 #[derive(Debug)]
@@ -145,5 +145,4 @@ pub enum Expr {
 #[derive(Debug)]
 pub struct Program {
     pub decls: Vec<Decl>,
-    pub stmts: Vec<Stmt>,
 }

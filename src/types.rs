@@ -4,6 +4,7 @@ use std::fmt;
 pub enum Type {
     Int,
     Float,
+    Void,
 }
 
 impl fmt::Display for Type {
@@ -11,6 +12,7 @@ impl fmt::Display for Type {
         match *self {
             Type::Int => write!(f, "int"),
             Type::Float => write!(f, "float"),
+            Type::Void => write!(f, "void"),
         }
     }
 }
@@ -20,6 +22,7 @@ impl Type {
         match *self {
             Type::Int => 'd',
             Type::Float => 'f',
+            Type::Void => 'v',
         }
     }
 }

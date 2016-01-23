@@ -42,7 +42,6 @@ impl<'a> Generator<'a> {
         println!("int main(void) {{");
 
         self.codegen_decls();
-        self.codegen_stmts(&program.stmts);
 
         println!("}}");
     }

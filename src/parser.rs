@@ -63,19 +63,23 @@ impl Parser {
         } else if self.peek(TokenType::TypeFloat) {
             self.index += 1;
             Ok(Type::Float)
+        } else if self.peek(TokenType::TypeVoid) {
+            self.index += 1;
+            Ok(Type::Void)
         } else {
             Err(Error::UnexpectedToken(self.curr_token(), vec![TokenType::TypeInt, TokenType::TypeFloat]))
         }
     }
 
+    /*
+     * program = { decl } .
+     */
     pub fn parse_program(&mut self) -> Result<Program, Error> {
         let decls = try!(self.parse_decls());
-        let stmts = try!(self.parse_stmts());
         try!(self.eat(TokenType::Eof));
 
         Ok(Program {
             decls: decls,
-            stmts: stmts,
         })
     }
 
@@ -88,6 +92,10 @@ impl Parser {
         Ok(decls)
     }
 
+    /*
+     * decl = var_decl
+     *      | fun_decl
+     */
     fn parse_decl(&mut self) -> Result<Decl, Error> {
         if self.peek(TokenType::Var) {
             let vd = try!(self.parse_var_decl());
@@ -111,6 +119,9 @@ impl Parser {
         Ok(vds)
     }
 
+    /*
+     * var_decl = "var" id ":" type ";"
+     */
     fn parse_var_decl(&mut self) -> Result<VarDecl, Error> {
         let pos = self.token_pos();
         try!(self.eat(TokenType::Var));
@@ -121,6 +132,9 @@ impl Parser {
         Ok(VarDecl { pos: pos, id: id, ty: ty })
     }
 
+    /*
+     * fun_decl   = "function" id "(" param_list ")" ":" { stmt } "end"
+     */
     fn parse_func_decl(&mut self) -> Result<FunDecl, Error> {
         let pos = self.token_pos();
         try!(self.eat(TokenType::Function));
@@ -145,6 +159,11 @@ impl Parser {
     }
 
 
+    /*
+     * params = ε
+     *        | id ":" type
+     *        | id ":" type "," params
+     */
     fn parse_params(&mut self) -> Result<Vec<(String, Type)>, Error> {
         let mut params = Vec::new();
         while self.peek(TokenType::Id) {
@@ -172,6 +191,14 @@ impl Parser {
         Ok(stmts)
     }
 
+    /*
+     * stmt = read_stmt
+     *      | print_stmt
+     *      | assign_stmt
+     *      | if_stmt
+     *      | while_stmt
+     *      | return_stmt
+     */
     fn parse_stmt(&mut self) -> Result<Stmt, Error> {
         if self.peek(TokenType::Read) {
             self.parse_read()
@@ -193,6 +220,9 @@ impl Parser {
         }
     }
 
+    /*
+     * read_stmt = "read" id ";"
+     */
     fn parse_read(&mut self) -> Result<Stmt, Error> {
         let pos = self.token_pos();
         try!(self.eat(TokenType::Read));
@@ -201,6 +231,9 @@ impl Parser {
         Ok(Stmt::Read(StmtRead { pos: pos, id: id }))
     }
 
+    /*
+     * print_stmt = "print" expr ";"
+     */
     fn parse_print(&mut self) -> Result<Stmt, Error> {
         let pos = self.token_pos();
         try!(self.eat(TokenType::Print));
@@ -209,6 +242,9 @@ impl Parser {
         Ok(Stmt::Print(StmtPrint { pos: pos, expr: e }))
     }
 
+    /*
+     * assign_stmt = id "=" expr ";"
+     */
     fn parse_assign(&mut self) -> Result<Stmt, Error> {
         let pos = self.token_pos();
         let id = try!(self.eat_lexeme(TokenType::Id));
@@ -218,6 +254,9 @@ impl Parser {
         Ok(Stmt::Assign(StmtAssign { pos: pos, id: id, expr: e }))
     }
 
+    /*
+     * if_stmt = "if" expr "then" { stmt } [ "else" { stmt } ] "end"
+     */
     fn parse_if(&mut self) -> Result<Stmt, Error> {
         let pos = self.token_pos();
         try!(self.eat(TokenType::If));
@@ -235,6 +274,9 @@ impl Parser {
         }))
     }
 
+    /*
+     * while_stmt = "while" expr "do" { stmt } "done"
+     */
     fn parse_while(&mut self) -> Result<Stmt, Error> {
         let pos = self.token_pos();
         try!(self.eat(TokenType::While));
@@ -249,17 +291,32 @@ impl Parser {
         }))
     }
 
+    /*
+     * return_stmt = "return" [ expr ] ";"
+     */
     fn parse_return(&mut self) -> Result<Stmt, Error> {
         let pos = self.token_pos();
         try!(self.eat(TokenType::Return));
-        let expr = try!(self.parse_expr());
+
+        let expr =
+            if self.peek(TokenType::Semicolon) {
+                None
+            } else {
+                Some(try!(self.parse_expr()))
+            };
         try!(self.eat(TokenType::Semicolon));
+
         Ok(Stmt::Return(StmtReturn {
             pos: pos,
             expr: expr,
         }))
     }
 
+    /*
+     * expr = expr "+" term
+     *      | expr "-" term
+     *      | term
+     */
     fn parse_expr(&mut self) -> Result<Expr, Error> {
         let pos = self.token_pos();
         let mut term = try!(self.parse_term());
@@ -291,6 +348,11 @@ impl Parser {
         Ok(term)
     }
 
+    /*
+     * term = term "+" factor
+     *      | term "-" factor
+     *      | factor
+     */
     fn parse_term(&mut self) -> Result<Expr, Error> {
         let pos = self.token_pos();
         let mut fact = try!(self.parse_factor());
@@ -322,6 +384,13 @@ impl Parser {
         Ok(fact)
     }
 
+    /*
+     * factor = id
+     *        | int_literal
+     *        | float_literal
+     *        | "(" expr ")"
+     *        | "-" expr
+     */
     fn parse_factor(&mut self) -> Result<Expr, Error> {
         let pos = self.token_pos();
         if self.peek(TokenType::Int) {

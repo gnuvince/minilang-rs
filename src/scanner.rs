@@ -76,7 +76,7 @@ impl<'a> Scanner<'a> {
             ',' => { Ok(self.single_char_tok(TokenType::Comma)) }
             c if c.is_digit(10) => { self.scan_int_or_float() }
             c if is_id_start(c) => { self.scan_id_or_keyword() }
-            c   => { Err(Error::IllegalCharacter(self.curr_pos, c)) }
+            c => { Err(Error::IllegalCharacter(self.curr_pos, c)) }
         }
     }
 
@@ -120,6 +120,7 @@ impl<'a> Scanner<'a> {
             "var" => TokenType::Var,
             "int" => TokenType::TypeInt,
             "float" => TokenType::TypeFloat,
+            "void" => TokenType::TypeVoid,
             "function" => TokenType::Function,
             "return" => TokenType::Return,
             _ => TokenType::Id,

@@ -21,8 +21,7 @@ impl TypeChecker {
     }
 
     pub fn tc_program(&mut self, p: &Program) -> Result<(), Error> {
-        try!(self.tc_decls(&p.decls));
-        self.tc_stmts(&p.stmts)
+        self.tc_decls(&p.decls)
     }
 
     fn tc_decls(&mut self, decls: &[Decl]) -> Result<(), Error> {

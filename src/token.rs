@@ -34,6 +34,7 @@ pub enum TokenType {
     Var,
     TypeInt,
     TypeFloat,
+    TypeVoid,
     Function,
     Return,
 
@@ -69,6 +70,7 @@ impl fmt::Display for TokenType {
             TokenType::Var => write!(f, "'var'"),
             TokenType::TypeInt => write!(f, "'int'"),
             TokenType::TypeFloat => write!(f, "'float'"),
+            TokenType::TypeVoid => write!(f, "'void'"),
             TokenType::Function => write!(f, "'function'"),
             TokenType::Return => write!(f, "'return'"),
             TokenType::Eof => write!(f, "<eof>"),
