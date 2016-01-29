@@ -1,7 +1,7 @@
 use token::{Token, TokenType};
 use ast::*;
 use pos::Pos;
-use error::Error;
+use error::{Result, Error};
 use types::Type;
 
 
@@ -31,7 +31,7 @@ impl Parser {
         self.tokens[self.index].pos
     }
 
-    fn eat(&mut self, t: TokenType) -> Result<(), Error> {
+    fn eat(&mut self, t: TokenType) -> Result<()> {
         let b = self.peek(t);
         if b {
             self.index += 1;
@@ -41,7 +41,7 @@ impl Parser {
         }
     }
 
-    fn eat_lexeme(&mut self, t: TokenType) -> Result<String, Error> {
+    fn eat_lexeme(&mut self, t: TokenType) -> Result<String> {
         let token = &self.tokens[self.index];
         if token.typ == t {
             match token.lexeme {
@@ -56,7 +56,7 @@ impl Parser {
         }
     }
 
-    fn eat_type(&mut self) -> Result<Type, Error> {
+    fn eat_type(&mut self) -> Result<Type> {
         if self.peek(TokenType::TypeInt) {
             self.index += 1;
             Ok(Type::Int)
@@ -74,7 +74,7 @@ impl Parser {
     /*
      * program = { decl } .
      */
-    pub fn parse_program(&mut self) -> Result<Program, Error> {
+    pub fn parse_program(&mut self) -> Result<Program> {
         let decls = try!(self.parse_decls());
         try!(self.eat(TokenType::Eof));
 
@@ -83,7 +83,7 @@ impl Parser {
         })
     }
 
-    fn parse_decls(&mut self) -> Result<Vec<Decl>, Error> {
+    fn parse_decls(&mut self) -> Result<Vec<Decl>> {
         let mut decls: Vec<Decl> = Vec::new();
         while self.peek(TokenType::Var) || self.peek(TokenType::Function) {
             let decl = try!(self.parse_decl());
@@ -96,7 +96,7 @@ impl Parser {
      * decl = var_decl
      *      | fun_decl
      */
-    fn parse_decl(&mut self) -> Result<Decl, Error> {
+    fn parse_decl(&mut self) -> Result<Decl> {
         if self.peek(TokenType::Var) {
             let vd = try!(self.parse_var_decl());
             Ok(Decl::Var(vd))
@@ -110,7 +110,7 @@ impl Parser {
         }
     }
 
-    fn parse_var_decls(&mut self) -> Result<Vec<VarDecl>, Error> {
+    fn parse_var_decls(&mut self) -> Result<Vec<VarDecl>> {
         let mut vds = Vec::new();
         while self.peek(TokenType::Var) {
             let vd = try!(self.parse_var_decl());
@@ -122,7 +122,7 @@ impl Parser {
     /*
      * var_decl = "var" id ":" type ";"
      */
-    fn parse_var_decl(&mut self) -> Result<VarDecl, Error> {
+    fn parse_var_decl(&mut self) -> Result<VarDecl> {
         let pos = self.token_pos();
         try!(self.eat(TokenType::Var));
         let id = try!(self.eat_lexeme(TokenType::Id));
@@ -133,9 +133,9 @@ impl Parser {
     }
 
     /*
-     * fun_decl   = "function" id "(" param_list ")" ":" { stmt } "end"
+     * fun_decl   = "function" id "(" param_list ")" ":" type { stmt } "end"
      */
-    fn parse_func_decl(&mut self) -> Result<FunDecl, Error> {
+    fn parse_func_decl(&mut self) -> Result<FunDecl> {
         let pos = self.token_pos();
         try!(self.eat(TokenType::Function));
         let id = try!(self.eat_lexeme(TokenType::Id));
@@ -164,7 +164,7 @@ impl Parser {
      *        | id ":" type
      *        | id ":" type "," params
      */
-    fn parse_params(&mut self) -> Result<Vec<(String, Type)>, Error> {
+    fn parse_params(&mut self) -> Result<Vec<(String, Type)>> {
         let mut params = Vec::new();
         while self.peek(TokenType::Id) {
             let id = try!(self.eat_lexeme(TokenType::Id));
@@ -182,7 +182,7 @@ impl Parser {
     }
 
 
-    fn parse_stmts(&mut self) -> Result<Vec<Stmt>, Error> {
+    fn parse_stmts(&mut self) -> Result<Vec<Stmt>> {
         let mut stmts: Vec<Stmt> = Vec::new();
         while self.is_stmt_start() {
             let stmt = try!(self.parse_stmt());
@@ -199,7 +199,7 @@ impl Parser {
      *      | while_stmt
      *      | return_stmt
      */
-    fn parse_stmt(&mut self) -> Result<Stmt, Error> {
+    fn parse_stmt(&mut self) -> Result<Stmt> {
         if self.peek(TokenType::Read) {
             self.parse_read()
         } else if self.peek(TokenType::Print) {
@@ -223,7 +223,7 @@ impl Parser {
     /*
      * read_stmt = "read" id ";"
      */
-    fn parse_read(&mut self) -> Result<Stmt, Error> {
+    fn parse_read(&mut self) -> Result<Stmt> {
         let pos = self.token_pos();
         try!(self.eat(TokenType::Read));
         let id = try!(self.eat_lexeme(TokenType::Id));
@@ -234,7 +234,7 @@ impl Parser {
     /*
      * print_stmt = "print" expr ";"
      */
-    fn parse_print(&mut self) -> Result<Stmt, Error> {
+    fn parse_print(&mut self) -> Result<Stmt> {
         let pos = self.token_pos();
         try!(self.eat(TokenType::Print));
         let e = try!(self.parse_expr());
@@ -245,7 +245,7 @@ impl Parser {
     /*
      * assign_stmt = id "=" expr ";"
      */
-    fn parse_assign(&mut self) -> Result<Stmt, Error> {
+    fn parse_assign(&mut self) -> Result<Stmt> {
         let pos = self.token_pos();
         let id = try!(self.eat_lexeme(TokenType::Id));
         try!(self.eat(TokenType::Equal));
@@ -257,7 +257,7 @@ impl Parser {
     /*
      * if_stmt = "if" expr "then" { stmt } [ "else" { stmt } ] "end"
      */
-    fn parse_if(&mut self) -> Result<Stmt, Error> {
+    fn parse_if(&mut self) -> Result<Stmt> {
         let pos = self.token_pos();
         try!(self.eat(TokenType::If));
         let e = try!(self.parse_expr());
@@ -277,7 +277,7 @@ impl Parser {
     /*
      * while_stmt = "while" expr "do" { stmt } "done"
      */
-    fn parse_while(&mut self) -> Result<Stmt, Error> {
+    fn parse_while(&mut self) -> Result<Stmt> {
         let pos = self.token_pos();
         try!(self.eat(TokenType::While));
         let e = try!(self.parse_expr());
@@ -294,7 +294,7 @@ impl Parser {
     /*
      * return_stmt = "return" [ expr ] ";"
      */
-    fn parse_return(&mut self) -> Result<Stmt, Error> {
+    fn parse_return(&mut self) -> Result<Stmt> {
         let pos = self.token_pos();
         try!(self.eat(TokenType::Return));
 
@@ -317,7 +317,7 @@ impl Parser {
      *      | expr "-" term
      *      | term
      */
-    fn parse_expr(&mut self) -> Result<Expr, Error> {
+    fn parse_expr(&mut self) -> Result<Expr> {
         let pos = self.token_pos();
         let mut term = try!(self.parse_term());
         while self.next_is_add() {
@@ -353,7 +353,7 @@ impl Parser {
      *      | term "-" factor
      *      | factor
      */
-    fn parse_term(&mut self) -> Result<Expr, Error> {
+    fn parse_term(&mut self) -> Result<Expr> {
         let pos = self.token_pos();
         let mut fact = try!(self.parse_factor());
         while self.next_is_mul() {
@@ -391,7 +391,7 @@ impl Parser {
      *        | "(" expr ")"
      *        | "-" expr
      */
-    fn parse_factor(&mut self) -> Result<Expr, Error> {
+    fn parse_factor(&mut self) -> Result<Expr> {
         let pos = self.token_pos();
         if self.peek(TokenType::Int) {
             self.parse_int()
@@ -416,7 +416,7 @@ impl Parser {
         }
     }
 
-    fn parse_int(&mut self) -> Result<Expr, Error> {
+    fn parse_int(&mut self) -> Result<Expr> {
         let pos = self.token_pos();
         let lexeme = try!(self.eat_lexeme(TokenType::Int));
         match lexeme.parse::<i64>() {
@@ -425,7 +425,7 @@ impl Parser {
         }
     }
 
-    fn parse_float(&mut self) -> Result<Expr, Error> {
+    fn parse_float(&mut self) -> Result<Expr> {
         let pos = self.token_pos();
         let lexeme = try!(self.eat_lexeme(TokenType::Float));
         match lexeme.parse::<f64>() {
@@ -434,7 +434,7 @@ impl Parser {
         }
     }
 
-    fn parse_id(&mut self) -> Result<Expr, Error> {
+    fn parse_id(&mut self) -> Result<Expr> {
         let pos = self.token_pos();
         let lexeme = try!(self.eat_lexeme(TokenType::Id));
         Ok(Expr::Id(ExprId { pos: pos, id: lexeme }))

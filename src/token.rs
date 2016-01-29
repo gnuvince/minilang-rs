@@ -79,7 +79,6 @@ impl fmt::Display for TokenType {
 }
 
 #[derive(Clone, Debug)]
-
 pub struct Token {
     pub typ: TokenType,
     pub lexeme: Option<String>,

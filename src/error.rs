@@ -1,9 +1,12 @@
 use std::fmt;
 use std::fmt::Display;
+use std::result;
 
 use pos::Pos;
 use token::{Token, TokenType};
 use types::Type;
+
+pub type Result<T> = result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {

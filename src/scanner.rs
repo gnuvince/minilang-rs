@@ -1,4 +1,4 @@
-use error::Error;
+use error::{Result, Error};
 use pos::Pos;
 use token::{Token, TokenType};
 
@@ -49,7 +49,7 @@ impl<'a> Scanner<'a> {
 
 
 
-    pub fn next_token(&mut self) -> Result<Token, Error> {
+    pub fn next_token(&mut self) -> Result<Token> {
         // Discard blanks and comments.
         self.skip_comments_and_whitespace();
 
@@ -81,7 +81,7 @@ impl<'a> Scanner<'a> {
     }
 
     // Scan digits into an Int or Float token.
-    fn scan_int_or_float(&mut self) -> Result<Token, Error> {
+    fn scan_int_or_float(&mut self) -> Result<Token> {
         let mut val = String::new();
         while self.peek().is_digit(10) {
             val.push(self.advance());
@@ -101,7 +101,7 @@ impl<'a> Scanner<'a> {
     }
 
     // Scan alpha-numeric characters into an Id or a keyword token.
-    fn scan_id_or_keyword(&mut self) -> Result<Token, Error> {
+    fn scan_id_or_keyword(&mut self) -> Result<Token> {
         let mut lexeme = String::new();
         while is_id_char(self.peek()) {
             lexeme.push(self.advance());
