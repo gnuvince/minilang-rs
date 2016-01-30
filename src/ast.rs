@@ -134,12 +134,20 @@ pub struct ExprBinop {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub struct ExprCall {
+    pub pos: Pos,
+    pub id: String,
+    pub args: Vec<Expr>,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum Expr {
     Id(ExprId),
     Int(ExprInt),
     Float(ExprFloat),
     Negate(ExprNegate),
     Binop(ExprBinop),
+    Call(ExprCall),
 }
 
 #[derive(Debug)]

@@ -181,6 +181,29 @@ impl Parser {
         Ok(params)
     }
 
+    /*
+     * args = "(" arg_list ")"
+     * arg_list = ε
+     *          | expr
+     *          | expr "," args
+     */
+    fn parse_args(&mut self) -> Result<Vec<Expr>> {
+        let mut args = Vec::new();
+
+        try!(self.eat(TokenType::LParen));
+
+        while !self.peek(TokenType::RParen) {
+            let expr = try!(self.parse_expr());
+            args.push(expr);
+
+            if self.peek(TokenType::Comma) {
+                try!(self.eat(TokenType::Comma));
+            }
+        }
+
+        try!(self.eat(TokenType::RParen));
+        Ok(args)
+    }
 
     fn parse_stmts(&mut self) -> Result<Vec<Stmt>> {
         let mut stmts: Vec<Stmt> = Vec::new();
@@ -355,25 +378,25 @@ impl Parser {
      */
     fn parse_term(&mut self) -> Result<Expr> {
         let pos = self.token_pos();
-        let mut fact = try!(self.parse_factor());
+        let mut term = try!(self.parse_factor());
         while self.next_is_mul() {
             if self.peek(TokenType::Star) {
                 try!(self.eat(TokenType::Star));
-                let f2 = try!(self.parse_factor());
-                fact = Expr::Binop(ExprBinop {
+                let fact = try!(self.parse_factor());
+                term = Expr::Binop(ExprBinop {
                     pos: pos,
                     op: Binop::Mul,
-                    expr1: Box::new(fact),
-                    expr2: Box::new(f2),
+                    expr1: Box::new(term),
+                    expr2: Box::new(fact),
                 });
             } else if self.peek(TokenType::Slash) {
                 try!(self.eat(TokenType::Slash));
-                let f2 = try!(self.parse_factor());
-                fact = Expr::Binop(ExprBinop {
+                let fact = try!(self.parse_factor());
+                term = Expr::Binop(ExprBinop {
                     pos: pos,
                     op: Binop::Div,
-                    expr1: Box::new(fact),
-                    expr2: Box::new(f2),
+                    expr1: Box::new(term),
+                    expr2: Box::new(fact),
                 });
             } else {
                 return Err(Error::UnexpectedToken(
@@ -399,7 +422,17 @@ impl Parser {
         } else if self.peek(TokenType::Float) {
             self.parse_float()
         } else if self.peek(TokenType::Id) {
-            self.parse_id()
+            let id = try!(self.eat_lexeme(TokenType::Id));
+            if self.peek(TokenType::LParen) {
+                let args = try!(self.parse_args());
+                Ok(Expr::Call(ExprCall {
+                    pos: pos,
+                    id: id,
+                    args: args,
+                }))
+            } else {
+                Ok(Expr::Id(ExprId { pos: pos, id: id }))
+            }
         } else if self.peek(TokenType::LParen) {
             try!(self.eat(TokenType::LParen));
             let e = try!(self.parse_expr());
