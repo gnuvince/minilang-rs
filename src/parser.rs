@@ -319,25 +319,25 @@ impl Parser {
      */
     fn parse_expr(&mut self) -> Result<Expr> {
         let pos = self.token_pos();
-        let mut term = try!(self.parse_term());
+        let mut expr = try!(self.parse_term());
         while self.next_is_add() {
             if self.peek(TokenType::Plus) {
                 try!(self.eat(TokenType::Plus));
-                let t2 = try!(self.parse_term());
-                term = Expr::Binop(ExprBinop {
+                let term = try!(self.parse_term());
+                expr = Expr::Binop(ExprBinop {
                     pos: pos,
                     op: Binop::Add,
-                    expr1: Box::new(term),
-                    expr2: Box::new(t2)
+                    expr1: Box::new(expr),
+                    expr2: Box::new(term)
                 });
             } else if self.peek(TokenType::Minus) {
                 try!(self.eat(TokenType::Minus));
-                let t2 = try!(self.parse_term());
-                term = Expr::Binop(ExprBinop {
+                let term = try!(self.parse_term());
+                expr = Expr::Binop(ExprBinop {
                     pos: pos,
                     op: Binop::Sub,
-                    expr1: Box::new(term),
-                    expr2: Box::new(t2)
+                    expr1: Box::new(expr),
+                    expr2: Box::new(term)
                 });
             } else {
                 return Err(Error::UnexpectedToken(
@@ -345,7 +345,7 @@ impl Parser {
                     vec![TokenType::Plus, TokenType::Minus]));
             }
         }
-        Ok(term)
+        Ok(expr)
     }
 
     /*
@@ -381,11 +381,12 @@ impl Parser {
                     vec![TokenType::Star, TokenType::Slash]));
             }
         }
-        Ok(fact)
+        Ok(term)
     }
 
     /*
      * factor = id
+     *        | id "(" expr* ")"
      *        | int_literal
      *        | float_literal
      *        | "(" expr ")"
