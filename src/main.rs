@@ -5,14 +5,14 @@ mod scanner;
 mod types;
 mod ast;
 mod parser;
-// mod typecheck;
+mod typecheck;
 // mod cgen;
 
 use token::{Token, TokenType};
 use error::Error;
 use scanner::Scanner;
 use parser::Parser;
-// use typecheck::TypeChecker;
+use typecheck::TypeChecker;
 
 use std::io::{Read, stdin};
 use std::env;
@@ -56,10 +56,10 @@ fn compile(cmd: Command) -> Result<(), Error> {
         return Ok(());
     }
 
-    /*
     let mut typechecker = TypeChecker::new();
     try!(typechecker.tc_program(&program));
 
+    /*
     if cmd == Command::Typecheck {
         println!("SYMBOL TABLE");
         println!("============");

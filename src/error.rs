@@ -54,8 +54,8 @@ impl Display for Error {
             Error::InvalidFloatLiteral(pos, ref s) =>
                 write!(f, "{}: Invalid float literal: '{}'", pos, s),
 
-            Error::UnexpectedType { pos, expected, actual } =>
-                write!(f, "{}: Unexpected type. Found: {}. Expected: {}.", pos, actual, expected),
+            Error::UnexpectedType { pos, ref expected, ref actual } =>
+                write!(f, "{}: Unexpected type. Found: {:?}. Expected: {:?}.", pos, actual, expected),
             Error::DuplicateVariable(pos, ref id) =>
                 write!(f, "{}: Duplicate variable declaration: {}", pos, id),
             Error::UndeclaredVariable(pos, ref id) =>
