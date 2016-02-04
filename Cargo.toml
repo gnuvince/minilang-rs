@@ -2,3 +2,6 @@
 name = "minilang"
 version = "0.1.0"
 authors = ["Vincent Foley <vfoley@gmail.com>"]
+
+[dependencies]
+clap = "~2.0.0"
