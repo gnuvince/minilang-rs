@@ -20,7 +20,7 @@ type        = "int"
 statement   = id "=" expression ";"
             | "print" expression ";"
             | "read" id ";"
-            | "if" expression "then" { statement } ["else" { statement } ] "end"
+            | "if" expression "then" { statement } ["else" { statement } ] "endif"
             | "while" expression "do" { statement } "done" .
 
 expression  = expression "+" expression

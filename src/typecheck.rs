@@ -21,48 +21,26 @@ impl TypeChecker {
     }
 
     pub fn tc_program(&mut self, p: &Program) -> Result<(), Error> {
-        self.tc_decls(&p.decls);
-        println!("{:?}", self.symtable);
-        println!("{:?}", self.expr_table);
-        Ok(())
+        try!(self.tc_decls(&p.decls));
+        self.tc_stmts(&p.stmts)
     }
 
-    fn tc_decls(&mut self, decls: &Vec<Decl>) -> Result<(), Error> {
+    fn tc_decls(&mut self, decls: &[Decl]) -> Result<(), Error> {
         for decl in decls {
-            match *decl {
-                Decl::Var(ref var_decl) => try!(self.tc_var_decl(var_decl)),
-                Decl::Fun(ref fun_decl) => try!(self.tc_fun_decl(fun_decl)),
-            }
+            try!(self.tc_decl(&decl));
         }
         Ok(())
     }
 
-
-    fn tc_var_decl(&mut self, decl: &VarDecl) -> Result<(), Error> {
+    fn tc_decl(&mut self, decl: &Decl) -> Result<(), Error> {
         if self.symtable.contains_key(&decl.id) {
             Err(Error::DuplicateVariable(decl.pos, decl.id.clone()))
         } else {
-            self.symtable.insert(decl.id.clone(), decl.ty.clone());
+            self.symtable.insert(decl.id.clone(), decl.ty);
             Ok(())
         }
     }
 
-
-    fn tc_fun_decl(&mut self, decl: &FunDecl) -> Result<(), Error> {
-        if self.symtable.contains_key(&decl.id) {
-            Err(Error::DuplicateVariable(decl.pos, decl.id.clone()))
-        } else {
-            let param_types = decl.params.iter().map(|ref tup| tup.1.clone()).collect();
-            let fun_ty = Type::Func(Box::new(decl.ty.clone()),
-                                    param_types);
-            self.symtable.insert(decl.id.clone(), fun_ty);
-            Ok(())
-        }
-    }
-
-
-
-    /*
     fn tc_stmts(&mut self, stmts: &[Stmt]) -> Result<(), Error> {
         for stmt in stmts {
             try!(self.tc_stmt(&stmt));
@@ -77,7 +55,6 @@ impl TypeChecker {
             Stmt::Print(ref stmt_) => self.tc_stmt_print(stmt_),
             Stmt::If(ref stmt_) => self.tc_stmt_if(stmt_),
             Stmt::While(ref stmt_) => self.tc_stmt_while(stmt_),
-            Stmt::Return(_) => Ok(()),
         }
     }
 
@@ -167,6 +144,4 @@ impl TypeChecker {
             (Type::Float , Type::Float) => Ok(Type::Float),
         }
     }
-    */
-
 }

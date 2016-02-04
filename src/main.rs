@@ -6,7 +6,7 @@ mod types;
 mod ast;
 mod parser;
 mod typecheck;
-// mod cgen;
+mod cgen;
 
 use token::{Token, TokenType};
 use error::Error;
@@ -28,6 +28,7 @@ enum Command {
 fn compile(cmd: Command) -> Result<(), Error> {
     let mut data = String::new();
     let _ = stdin().read_to_string(&mut data);
+    let data = data;
     let mut scanner = Scanner::new(&data);
 
     let mut tokens: Vec<Token> = Vec::new();
@@ -52,14 +53,13 @@ fn compile(cmd: Command) -> Result<(), Error> {
     let program = try!(parser.parse_program());
 
     if cmd == Command::Parse {
-        println!("{:#?}", program);
+        println!("{:?}", program);
         return Ok(());
     }
 
     let mut typechecker = TypeChecker::new();
     try!(typechecker.tc_program(&program));
 
-    /*
     if cmd == Command::Typecheck {
         println!("SYMBOL TABLE");
         println!("============");
@@ -78,7 +78,6 @@ fn compile(cmd: Command) -> Result<(), Error> {
     }
 
     cgen::codegen(&program, &typechecker.symtable, &typechecker.expr_table);
-    */
 
     Ok(())
 }

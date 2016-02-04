@@ -19,28 +19,11 @@ impl Hash for Float {
 }
 impl Eq for Float {
 }
-
 #[derive(Debug)]
-pub enum Decl {
-    Var(VarDecl),
-    Fun(FunDecl),
-}
-
-#[derive(Debug)]
-pub struct VarDecl {
+pub struct Decl {
     pub pos: Pos,
     pub id: String,
     pub ty: Type,
-}
-
-#[derive(Debug)]
-pub struct FunDecl {
-    pub pos: Pos,
-    pub id: String,
-    pub params: Vec<(String, Type)>,
-    pub ty: Type,
-    pub decls: Vec<VarDecl>,
-    pub stmts: Vec<Stmt>,
 }
 
 #[derive(Debug)]
@@ -78,19 +61,12 @@ pub struct StmtWhile {
 }
 
 #[derive(Debug)]
-pub struct StmtReturn {
-    pub pos: Pos,
-    pub expr: Option<Expr>,
-}
-
-#[derive(Debug)]
 pub enum Stmt {
     Read(StmtRead),
     Print(StmtPrint),
     Assign(StmtAssign),
     If(StmtIf),
     While(StmtWhile),
-    Return(StmtReturn),
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
@@ -134,23 +110,16 @@ pub struct ExprBinop {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
-pub struct ExprCall {
-    pub pos: Pos,
-    pub id: String,
-    pub args: Vec<Expr>,
-}
-
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum Expr {
     Id(ExprId),
     Int(ExprInt),
     Float(ExprFloat),
     Negate(ExprNegate),
     Binop(ExprBinop),
-    Call(ExprCall),
 }
 
 #[derive(Debug)]
 pub struct Program {
     pub decls: Vec<Decl>,
+    pub stmts: Vec<Stmt>,
 }

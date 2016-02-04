@@ -1,4 +1,4 @@
-use error::{Result, Error};
+use error::Error;
 use pos::Pos;
 use token::{Token, TokenType};
 
@@ -49,7 +49,7 @@ impl<'a> Scanner<'a> {
 
 
 
-    pub fn next_token(&mut self) -> Result<Token> {
+    pub fn next_token(&mut self) -> Result<Token, Error> {
         // Discard blanks and comments.
         self.skip_comments_and_whitespace();
 
@@ -73,15 +73,14 @@ impl<'a> Scanner<'a> {
             ')' => { Ok(self.single_char_tok(TokenType::RParen)) }
             ':' => { Ok(self.single_char_tok(TokenType::Colon)) }
             ';' => { Ok(self.single_char_tok(TokenType::Semicolon)) }
-            ',' => { Ok(self.single_char_tok(TokenType::Comma)) }
             c if c.is_digit(10) => { self.scan_int_or_float() }
             c if is_id_start(c) => { self.scan_id_or_keyword() }
-            c => { Err(Error::IllegalCharacter(self.curr_pos, c)) }
+            c   => { Err(Error::IllegalCharacter(self.curr_pos, c)) }
         }
     }
 
     // Scan digits into an Int or Float token.
-    fn scan_int_or_float(&mut self) -> Result<Token> {
+    fn scan_int_or_float(&mut self) -> Result<Token, Error> {
         let mut val = String::new();
         while self.peek().is_digit(10) {
             val.push(self.advance());
@@ -101,7 +100,7 @@ impl<'a> Scanner<'a> {
     }
 
     // Scan alpha-numeric characters into an Id or a keyword token.
-    fn scan_id_or_keyword(&mut self) -> Result<Token> {
+    fn scan_id_or_keyword(&mut self) -> Result<Token, Error> {
         let mut lexeme = String::new();
         while is_id_char(self.peek()) {
             lexeme.push(self.advance());
@@ -120,9 +119,6 @@ impl<'a> Scanner<'a> {
             "var" => TokenType::Var,
             "int" => TokenType::TypeInt,
             "float" => TokenType::TypeFloat,
-            "void" => TokenType::TypeVoid,
-            "function" => TokenType::Function,
-            "return" => TokenType::Return,
             _ => TokenType::Id,
         };
 

@@ -1,9 +1,25 @@
 use std::fmt;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Type {
     Int,
     Float,
-    Void,
-    Func(Box<Type>, Vec<Type>),
+}
+
+impl fmt::Display for Type {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Type::Int => write!(f, "int"),
+            Type::Float => write!(f, "float"),
+        }
+    }
+}
+
+impl Type {
+    pub fn format_letter(&self) -> char {
+        match *self {
+            Type::Int => 'd',
+            Type::Float => 'f',
+        }
+    }
 }

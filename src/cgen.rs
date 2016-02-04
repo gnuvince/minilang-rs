@@ -1,25 +1,6 @@
-use std::fmt;
-use std::fmt::Display;
-
 use ast::*;
 use types::Type;
 use typecheck::{Symtable, Exprtable};
-
-enum ExprReturn {
-    Id(String),
-    Int(i64),
-    Float(f64),
-}
-
-impl Display for ExprReturn {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            ExprReturn::Id(ref s) => write!(f, "{}", s.clone()),
-            ExprReturn::Int(n) => write!(f, "{}", n),
-            ExprReturn::Float(fl) => write!(f, "{}", fl),
-        }
-    }
-}
 
 pub struct Generator<'a> {
     tmp_counter: i32,
@@ -42,6 +23,7 @@ impl<'a> Generator<'a> {
         println!("int main(void) {{");
 
         self.codegen_decls();
+        self.codegen_stmts(&program.stmts);
 
         println!("}}");
     }
@@ -70,33 +52,29 @@ impl<'a> Generator<'a> {
                 }
             }
             Stmt::Print(ref stmt_) => {
-                let expr_ret = self.codegen_expr(&stmt_.expr);
+                let tmp = self.codegen_expr(&stmt_.expr);
                 match self.exprtable.get(&stmt_.expr) {
-                    Some(ty) => { println!("printf(\"%{}\\n\", {});", ty.format_letter(), expr_ret); }
+                    Some(ty) => { println!("printf(\"%{}\\n\", {});", ty.format_letter(), tmp); }
                     None => { println!("/* read error */"); }
                 }
             }
             Stmt::Assign(ref stmt_) => {
-                let expr_ret = self.codegen_expr(&stmt_.expr);
-                println!("{} = {};", stmt_.id, expr_ret);
+                let tmp = self.codegen_expr(&stmt_.expr);
+                println!("{} = {};", stmt_.id, tmp);
             }
             Stmt::If(ref stmt_) => {
-                let expr_ret = self.codegen_expr(&stmt_.expr);
-                println!("if ({}) {{", expr_ret);
+                let tmp = self.codegen_expr(&stmt_.expr);
+                println!("if ({}) {{", tmp);
                 self.codegen_stmts(&stmt_.then_stmts);
                 println!("}} else {{");
                 self.codegen_stmts(&stmt_.else_stmts);
                 println!("}}");
             }
             Stmt::While(ref stmt_) => {
-                let expr_ret = self.codegen_expr(&stmt_.expr);
-                println!("while ({}) {{", expr_ret);
+                let tmp = self.codegen_expr(&stmt_.expr);
+                println!("while ({}) {{", tmp);
                 self.codegen_stmts(&stmt_.stmts);
                 println!("}}");
-            }
-            Stmt::Return(ref stmt_) => {
-                let expr_ret = self.codegen_expr(&stmt_.expr);
-                println!("return {};", expr_ret);
             }
         }
     }
@@ -107,22 +85,20 @@ impl<'a> Generator<'a> {
         tmp.to_string()
     }
 
-    fn codegen_expr(&mut self, expr: &Expr) -> ExprReturn {
+    fn codegen_expr(&mut self, expr: &Expr) -> String {
+        let tmp = self.new_tmp();
         let ty_str = match self.exprtable.get(expr) {
             Some(&Type::Int) => "int",
             Some(&Type::Float) => "float",
             None => "/* fail */",
         };
-
         match *expr {
-            Expr::Int(ref expr_) => { ExprReturn::Int(expr_.value) }
-            Expr::Float(ref expr_) => { ExprReturn::Float(expr_.value.0) }
-            Expr::Id(ref expr_) => { ExprReturn::Id(expr_.id.clone()) }
+            Expr::Int(ref expr_) => { println!("{} {} = {};", ty_str, tmp, expr_.value); }
+            Expr::Float(ref expr_) => { println!("{} {} = {};", ty_str, tmp, expr_.value.0); }
+            Expr::Id(ref expr_) => { return expr_.id.clone(); }
             Expr::Negate(ref expr_) => {
-                let tmp = self.new_tmp();
-                let expr_ret = self.codegen_expr(&expr_.expr);
-                println!("{} {} = -{};", ty_str, tmp, expr_ret);
-                ExprReturn::Id(tmp)
+                let id1 = self.codegen_expr(&expr_.expr);
+                println!("{} {} = -{};", ty_str, tmp, id1);
             }
             Expr::Binop(ref expr_) => {
                 let op_char = match expr_.op {
@@ -131,12 +107,11 @@ impl<'a> Generator<'a> {
                     Binop::Mul => '*',
                     Binop::Div => '/',
                 };
-                let tmp = self.new_tmp();
-                let expr_ret1 = self.codegen_expr(&expr_.expr1);
-                let expr_ret2 = self.codegen_expr(&expr_.expr2);
-                println!("{} {} = {} {} {};", ty_str, tmp, expr_ret1, op_char, expr_ret2);
-                ExprReturn::Id(tmp)
+                let id1 = self.codegen_expr(&expr_.expr1);
+                let id2 = self.codegen_expr(&expr_.expr2);
+                println!("{} {} = {} {} {};", ty_str, tmp, id1, op_char, id2);
             }
         }
+        tmp
     }
 }
