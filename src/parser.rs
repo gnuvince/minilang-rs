@@ -160,7 +160,7 @@ impl Parser {
         let then_stmts = try!(self.parse_stmts());
         try!(self.eat(TokenType::Else));
         let else_stmts = try!(self.parse_stmts());
-        try!(self.eat(TokenType::End));
+        try!(self.eat(TokenType::EndIf));
         Ok(Stmt::If(StmtIf {
             pos: pos,
             expr: e,
