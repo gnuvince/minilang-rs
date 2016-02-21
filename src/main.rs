@@ -8,14 +8,14 @@ mod scanner;
 mod types;
 mod ast;
 mod parser;
-// mod typecheck;
+mod typecheck;
 // mod cgen;
 
 use token::{Token, TokenType};
 use error::Error;
 use scanner::Scanner;
 use parser::Parser;
-// use typecheck::TypeChecker;
+use typecheck::TypeChecker;
 
 use std::io::{Read, stdin};
 use std::process;
@@ -28,6 +28,7 @@ enum CompileAction {
     DisplayTokens,
     Parse,
     DisplayAst,
+    Typecheck,
 }
 
 impl CompileManager {
@@ -42,6 +43,7 @@ impl CompileManager {
             CompileAction::DisplayTokens => { self.scan(true).unwrap_or_else(|e| self.error(e)) }
             CompileAction::Parse => { self.parse(false).unwrap_or_else(|e| self.error(e)) }
             CompileAction::DisplayAst => { self.parse(true).unwrap_or_else(|e| self.error(e)) }
+            CompileAction::Typecheck => { self.typecheck(false).unwrap_or_else(|e| self.error(e)) }
         }
     }
 
@@ -84,6 +86,15 @@ impl CompileManager {
         }
         Ok(())
     }
+
+    fn typecheck(&self, _display_tables: bool) -> Result<(), Error> {
+        let tokens = try!(self.get_tokens());
+        let mut parser = Parser::new(tokens);
+        let ast = try!(parser.parse_program());
+        let mut tc = TypeChecker::new();
+        try!(tc.tc_program(&ast));
+        Ok(())
+    }
 }
 
 
@@ -123,6 +134,7 @@ fn main() {
         Some("tokens") => { cm.perform_action(CompileAction::DisplayTokens) }
         Some("parse") => { cm.perform_action(CompileAction::Parse) }
         Some("ast") => { cm.perform_action(CompileAction::DisplayAst) }
+        Some("typecheck") => { cm.perform_action(CompileAction::Typecheck) }
         Some(_) => {}
         None => {
             println!("{}", compiler_match.usage());

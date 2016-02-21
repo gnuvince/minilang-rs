@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 
 use ast::*;
+use pos::Pos;
 use types::Type;
 use error::Error;
 
 pub type Symtable = HashMap<String, Type>;
-pub type Exprtable = HashMap<Expr, Type>;
+pub type Exprtable = HashMap<u64, Type>;
 
 pub struct TypeChecker {
     pub symtable: Symtable,
@@ -108,24 +109,22 @@ impl TypeChecker {
     }
 
     fn tc_expr(&mut self, expr: &Expr) -> Result<Type, Error> {
-        let ty = try!(match *expr {
-            Expr::Int(_) => Ok(Type::Int),
-            Expr::Float(_) => Ok(Type::Float),
-            Expr::Id(ref expr_) => self.tc_expr_id(expr_),
-            Expr::Negate(ref expr_) => self.tc_expr_negate(expr_),
-            Expr::Binop(ref expr_) => self.tc_expr_binop(expr_),
+        let ty = try!(match expr.expr {
+            Expr_::Int(_) => Ok(Type::Int),
+            Expr_::Float(_) => Ok(Type::Float),
+            Expr_::Id(ref expr_) => self.tc_expr_id(expr_, &expr.pos),
+            Expr_::Negate(ref expr_) => self.tc_expr_negate(expr_),
+            Expr_::Binop(ref expr_) => self.tc_expr_binop(expr_),
         });
 
-        let expr_copy = expr.clone();
-        self.expr_table.insert(expr_copy, ty);
-
+        self.expr_table.insert(expr.node_id, ty);
         Ok(ty)
     }
 
-    fn tc_expr_id(&mut self, expr: &ExprId) -> Result<Type, Error> {
+    fn tc_expr_id(&mut self, expr: &ExprId, pos: &Pos) -> Result<Type, Error> {
         match self.symtable.get(&expr.id) {
             Some(ty) => Ok(*ty),
-            None => Err(Error::UndeclaredVariable(expr.pos, expr.id.clone())),
+            None => Err(Error::UndeclaredVariable(*pos, expr.id.clone())),
         }
     }
 

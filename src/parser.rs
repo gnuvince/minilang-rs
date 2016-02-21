@@ -8,6 +8,7 @@ use types::Type;
 pub struct Parser {
     tokens: Vec<Token>,
     index: usize,
+    curr_id: u64,
 }
 
 impl Parser {
@@ -15,7 +16,14 @@ impl Parser {
         Parser {
             tokens: tokens,
             index: 0,
+            curr_id: 0,
         }
+    }
+
+    fn next_id(&mut self) -> u64 {
+        let x = self.curr_id;
+        self.curr_id += 1;
+        x
     }
 
     fn peek(&self, t: TokenType) -> bool {
@@ -158,8 +166,15 @@ impl Parser {
         let e = try!(self.parse_expr());
         try!(self.eat(TokenType::Then));
         let then_stmts = try!(self.parse_stmts());
-        try!(self.eat(TokenType::Else));
-        let else_stmts = try!(self.parse_stmts());
+
+        let else_stmts =
+            if self.peek(TokenType::Else) {
+                try!(self.eat(TokenType::Else));
+                try!(self.parse_stmts())
+            } else {
+                vec![]
+            };
+
         try!(self.eat(TokenType::EndIf));
         Ok(Stmt::If(StmtIf {
             pos: pos,
@@ -187,29 +202,27 @@ impl Parser {
         let pos = self.token_pos();
         let mut term = try!(self.parse_term());
         while self.next_is_add() {
-            if self.peek(TokenType::Plus) {
-                try!(self.eat(TokenType::Plus));
-                let t2 = try!(self.parse_term());
-                term = Expr::Binop(ExprBinop {
-                    pos: pos,
-                    op: Binop::Add,
+            let (tok, op) =
+                if self.peek(TokenType::Plus) {
+                    (TokenType::Plus, Binop::Add)
+                } else if self.peek(TokenType::Minus) {
+                    (TokenType::Minus, Binop::Sub)
+                } else {
+                    return Err(Error::UnexpectedToken(
+                        self.curr_token(),
+                        vec![TokenType::Plus, TokenType::Minus]));
+                };
+            try!(self.eat(tok));
+            let t2 = try!(self.parse_term());
+            term = Expr {
+                pos: pos,
+                node_id: self.next_id(),
+                expr: Expr_::Binop(ExprBinop {
+                    op: op,
                     expr1: Box::new(term),
                     expr2: Box::new(t2)
-                });
-            } else if self.peek(TokenType::Minus) {
-                try!(self.eat(TokenType::Minus));
-                let t2 = try!(self.parse_term());
-                term = Expr::Binop(ExprBinop {
-                    pos: pos,
-                    op: Binop::Sub,
-                    expr1: Box::new(term),
-                    expr2: Box::new(t2)
-                });
-            } else {
-                return Err(Error::UnexpectedToken(
-                    self.curr_token(),
-                    vec![TokenType::Plus, TokenType::Minus]));
-            }
+                })
+            };
         }
         Ok(term)
     }
@@ -218,29 +231,27 @@ impl Parser {
         let pos = self.token_pos();
         let mut fact = try!(self.parse_factor());
         while self.next_is_mul() {
-            if self.peek(TokenType::Star) {
-                try!(self.eat(TokenType::Star));
-                let f2 = try!(self.parse_factor());
-                fact = Expr::Binop(ExprBinop {
-                    pos: pos,
-                    op: Binop::Mul,
+            let (tok, op) =
+                if self.peek(TokenType::Star) {
+                    (TokenType::Star, Binop::Mul)
+                } else if self.peek(TokenType::Slash) {
+                    (TokenType::Slash, Binop::Div)
+                } else {
+                    return Err(Error::UnexpectedToken(
+                        self.curr_token(),
+                        vec![TokenType::Star, TokenType::Slash]));
+                };
+            try!(self.eat(tok));
+            let f2 = try!(self.parse_factor());
+            fact = Expr {
+                pos: pos,
+                node_id: self.next_id(),
+                expr: Expr_::Binop(ExprBinop {
+                    op: op,
                     expr1: Box::new(fact),
                     expr2: Box::new(f2),
-                });
-            } else if self.peek(TokenType::Slash) {
-                try!(self.eat(TokenType::Slash));
-                let f2 = try!(self.parse_factor());
-                fact = Expr::Binop(ExprBinop {
-                    pos: pos,
-                    op: Binop::Div,
-                    expr1: Box::new(fact),
-                    expr2: Box::new(f2),
-                });
-            } else {
-                return Err(Error::UnexpectedToken(
-                    self.curr_token(),
-                    vec![TokenType::Star, TokenType::Slash]));
-            }
+                })
+            };
         }
         Ok(fact)
     }
@@ -261,7 +272,13 @@ impl Parser {
         } else if self.peek(TokenType::Minus) {
             try!(self.eat(TokenType::Minus));
             let e = try!(self.parse_expr());
-            Ok(Expr::Negate(ExprNegate { pos: pos, expr: Box::new(e) }))
+            Ok(Expr {
+                pos: pos,
+                node_id: self.next_id(),
+                expr: Expr_::Negate(ExprNegate {
+                    expr: Box::new(e)
+                })
+            })
         } else {
             Err(Error::UnexpectedToken(
                 self.curr_token(),
@@ -274,7 +291,13 @@ impl Parser {
         let pos = self.token_pos();
         let lexeme = try!(self.eat_lexeme(TokenType::Int));
         match lexeme.parse::<i64>() {
-            Ok(n) => Ok(Expr::Int (ExprInt { pos: pos, value: n })),
+            Ok(n) => Ok(Expr {
+                pos: pos,
+                node_id: self.next_id(),
+                expr: Expr_::Int(ExprInt {
+                    value: n
+                })
+            }),
             Err(_) => Err(Error::InvalidIntLiteral(pos, lexeme))
         }
     }
@@ -283,7 +306,13 @@ impl Parser {
         let pos = self.token_pos();
         let lexeme = try!(self.eat_lexeme(TokenType::Float));
         match lexeme.parse::<f64>() {
-            Ok(n) => Ok(Expr::Float(ExprFloat { pos: pos, value: Float(n) })),
+            Ok(n) => Ok(Expr {
+                pos: pos,
+                node_id: self.next_id(),
+                expr: Expr_::Float(ExprFloat {
+                    value: Float(n)
+                })
+            }),
             Err(_) => Err(Error::InvalidFloatLiteral(pos, lexeme))
         }
     }
@@ -291,7 +320,13 @@ impl Parser {
     fn parse_id(&mut self) -> Result<Expr, Error> {
         let pos = self.token_pos();
         let lexeme = try!(self.eat_lexeme(TokenType::Id));
-        Ok(Expr::Id(ExprId { pos: pos, id: lexeme }))
+        Ok(Expr {
+            pos: pos,
+            node_id: self.next_id(),
+            expr: Expr_::Id(ExprId {
+                id: lexeme
+            })
+        })
     }
 
     fn is_stmt_start(&self) -> bool {

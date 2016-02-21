@@ -77,45 +77,48 @@ pub enum Binop {
     Div,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug)]
 pub struct ExprId {
-    pub pos: Pos,
     pub id: String
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug)]
 pub struct ExprInt {
-    pub pos: Pos,
     pub value: i64,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug)]
 pub struct ExprFloat {
-    pub pos: Pos,
     pub value: Float,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug)]
 pub struct ExprNegate {
-    pub pos: Pos,
     pub expr: Box<Expr>,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug)]
 pub struct ExprBinop {
-    pub pos: Pos,
     pub op: Binop,
     pub expr1: Box<Expr>,
     pub expr2: Box<Expr>,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
-pub enum Expr {
+#[derive(Debug)]
+pub enum Expr_ {
     Id(ExprId),
     Int(ExprInt),
     Float(ExprFloat),
     Negate(ExprNegate),
     Binop(ExprBinop),
+}
+
+
+#[derive(Debug)]
+pub struct Expr {
+    pub pos: Pos,
+    pub node_id: u64,
+    pub expr: Expr_,
 }
 
 #[derive(Debug)]
