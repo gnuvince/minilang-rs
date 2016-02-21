@@ -29,6 +29,7 @@ enum CompileAction {
     Parse,
     DisplayAst,
     Typecheck,
+    TypeTables,
 }
 
 impl CompileManager {
@@ -44,6 +45,7 @@ impl CompileManager {
             CompileAction::Parse => { self.parse(false).unwrap_or_else(|e| self.error(e)) }
             CompileAction::DisplayAst => { self.parse(true).unwrap_or_else(|e| self.error(e)) }
             CompileAction::Typecheck => { self.typecheck(false).unwrap_or_else(|e| self.error(e)) }
+            CompileAction::TypeTables => { self.typecheck(true).unwrap_or_else(|e| self.error(e)) }
         }
     }
 
@@ -87,12 +89,18 @@ impl CompileManager {
         Ok(())
     }
 
-    fn typecheck(&self, _display_tables: bool) -> Result<(), Error> {
+    fn typecheck(&self, display_tables: bool) -> Result<(), Error> {
         let tokens = try!(self.get_tokens());
         let mut parser = Parser::new(tokens);
         let ast = try!(parser.parse_program());
         let mut tc = TypeChecker::new();
         try!(tc.tc_program(&ast));
+        if display_tables {
+            println!("SYMBOL TABLE");
+            println!("{:#?}", tc.symtable);
+            println!("EXPRESSION TABLE");
+            println!("{:#?}", tc.expr_table);
+        }
         Ok(())
     }
 }
@@ -118,7 +126,7 @@ fn main() {
         .subcommand(SubCommand::with_name("typecheck")
                     .about("Typecheck a program; return 0 if valid, 1 otherwise"))
 
-        .subcommand(SubCommand::with_name("typed-ast")
+        .subcommand(SubCommand::with_name("typetables")
                     .about("Typecheck a program and print its typed AST"))
 
         .subcommand(SubCommand::with_name("mips")
@@ -135,6 +143,7 @@ fn main() {
         Some("parse") => { cm.perform_action(CompileAction::Parse) }
         Some("ast") => { cm.perform_action(CompileAction::DisplayAst) }
         Some("typecheck") => { cm.perform_action(CompileAction::Typecheck) }
+        Some("typetables") => { cm.perform_action(CompileAction::TypeTables) }
         Some(_) => {}
         None => {
             println!("{}", compiler_match.usage());
