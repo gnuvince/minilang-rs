@@ -1,24 +1,6 @@
-use std::mem;
-use std::hash::{Hash, Hasher};
-
 use types::Type;
 use pos::Pos;
 
-/* newtype to allow putting an ExprFloat node in a hashmap */
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Float(pub f64);
-
-impl Hash for Float {
-    fn hash<H>(&self, state: &mut H) where H: Hasher {
-        unsafe {
-            let h: i64 = mem::transmute(*self);
-            state.write_i64(h);
-            state.finish();
-        }
-    }
-}
-impl Eq for Float {
-}
 #[derive(Debug)]
 pub struct Decl {
     pub pos: Pos,
@@ -89,7 +71,7 @@ pub struct ExprInt {
 
 #[derive(Debug)]
 pub struct ExprFloat {
-    pub value: Float,
+    pub value: f64,
 }
 
 #[derive(Debug)]

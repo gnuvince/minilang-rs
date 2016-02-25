@@ -310,7 +310,7 @@ impl Parser {
                 pos: pos,
                 node_id: self.next_id(),
                 expr: Expr_::Float(ExprFloat {
-                    value: Float(n)
+                    value: n
                 })
             }),
             Err(_) => Err(Error::InvalidFloatLiteral(pos, lexeme))
