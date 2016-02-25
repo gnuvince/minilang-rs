@@ -51,7 +51,7 @@ pub enum Stmt {
     While(StmtWhile),
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Debug)]
 pub enum Binop {
     Add,
     Sub,
