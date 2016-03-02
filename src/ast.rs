@@ -75,6 +75,11 @@ pub struct ExprFloat {
 }
 
 #[derive(Debug)]
+pub struct ExprString {
+    pub value: String,
+}
+
+#[derive(Debug)]
 pub struct ExprNegate {
     pub expr: Box<Expr>,
 }
@@ -91,6 +96,7 @@ pub enum Expr_ {
     Id(ExprId),
     Int(ExprInt),
     Float(ExprFloat),
+    String(ExprString),
     Negate(ExprNegate),
     Binop(ExprBinop),
 }

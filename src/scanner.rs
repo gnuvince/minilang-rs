@@ -73,6 +73,7 @@ impl<'a> Scanner<'a> {
             ')' => { Ok(self.single_char_tok(TokenType::RParen)) }
             ':' => { Ok(self.single_char_tok(TokenType::Colon)) }
             ';' => { Ok(self.single_char_tok(TokenType::Semicolon)) }
+            '"' => { self.scan_string_lit() }
             c if c.is_digit(10) => { self.scan_int_or_float() }
             c if is_id_start(c) => { self.scan_id_or_keyword() }
             c   => { Err(Error::IllegalCharacter(self.curr_pos, c)) }
@@ -99,6 +100,22 @@ impl<'a> Scanner<'a> {
         Ok(self.lexeme_tok(TokenType::Float, val))
     }
 
+    fn scan_string_lit(&mut self) -> Result<Token, Error> {
+        self.advance();
+        let mut strbuf = String::new();
+        while !self.is_eof() && self.peek() != '"' {
+            strbuf.push(self.peek());
+            self.advance();
+        }
+
+        if self.is_eof() {
+            Err(Error::UnterminatedString(self.start_pos))
+        } else {
+            self.advance(); // skip over the closing double quote
+            Ok(self.lexeme_tok(TokenType::String, strbuf))
+        }
+    }
+
     // Scan alpha-numeric characters into an Id or a keyword token.
     fn scan_id_or_keyword(&mut self) -> Result<Token, Error> {
         let mut lexeme = String::new();
@@ -119,6 +136,7 @@ impl<'a> Scanner<'a> {
             "var" => TokenType::Var,
             "int" => TokenType::TypeInt,
             "float" => TokenType::TypeFloat,
+            "string" => TokenType::TypeString,
             _ => TokenType::Id,
         };
 

@@ -7,6 +7,7 @@ pub enum TokenType {
     // Values
     Int,
     Float,
+    String,
     Id,
 
     // Punctuation and operators
@@ -33,6 +34,7 @@ pub enum TokenType {
     Var,
     TypeInt,
     TypeFloat,
+    TypeString,
 
     // Others
     Eof,
@@ -43,6 +45,7 @@ impl fmt::Display for TokenType {
         match *self {
             TokenType::Int => write!(f, "integer"),
             TokenType::Float => write!(f, "float"),
+            TokenType::String => write!(f, "string"),
             TokenType::Id => write!(f, "identifier"),
             TokenType::Plus => write!(f, "'+'"),
             TokenType::Minus => write!(f, "'-'"),
@@ -65,6 +68,7 @@ impl fmt::Display for TokenType {
             TokenType::Var => write!(f, "'var'"),
             TokenType::TypeInt => write!(f, "'int'"),
             TokenType::TypeFloat => write!(f, "'float'"),
+            TokenType::TypeString => write!(f, "'string'"),
             TokenType::Eof => write!(f, "<eof>"),
         }
     }

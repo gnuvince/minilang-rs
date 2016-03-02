@@ -65,10 +65,11 @@ impl TypeChecker {
             Some(&id_ty) => {
                 match (id_ty, expr_ty) {
                     (Type::Int, Type::Int) => Ok(()),
-                    (Type::Int, Type::Float) =>
-                        Err(Error::UnexpectedType { pos: stmt.pos, expected: Type::Int, actual: Type::Float }),
                     (Type::Float, Type::Int) => Ok(()),
                     (Type::Float, Type::Float) => Ok(()),
+                    (Type::String, Type::String) => Ok(()),
+                    (t1, t2) =>
+                        Err(Error::UnexpectedType { pos: stmt.pos, expected: t1, actual: t2 }),
                 }
             }
             None => Err(Error::UndeclaredVariable(stmt.pos, stmt.id.clone()))
@@ -112,9 +113,10 @@ impl TypeChecker {
         let ty = try!(match expr.expr {
             Expr_::Int(_) => Ok(Type::Int),
             Expr_::Float(_) => Ok(Type::Float),
+            Expr_::String(_) => Ok(Type::String),
             Expr_::Id(ref expr_) => self.tc_expr_id(expr_, &expr.pos),
             Expr_::Negate(ref expr_) => self.tc_expr_negate(expr_),
-            Expr_::Binop(ref expr_) => self.tc_expr_binop(expr_),
+            Expr_::Binop(ref expr_) => self.tc_expr_binop(expr_, &expr.pos),
         });
 
         self.expr_table.insert(expr.node_id, ty);
@@ -132,7 +134,7 @@ impl TypeChecker {
         self.tc_expr(&expr.expr)
     }
 
-    fn tc_expr_binop(&mut self, expr: &ExprBinop) -> Result<Type, Error> {
+    fn tc_expr_binop(&mut self, expr: &ExprBinop, pos: &Pos) -> Result<Type, Error> {
         let t1 = try!(self.tc_expr(&expr.expr1));
         let t2 = try!(self.tc_expr(&expr.expr2));
 
@@ -141,6 +143,11 @@ impl TypeChecker {
             (Type::Int   , Type::Float) => Ok(Type::Float),
             (Type::Float , Type::Int)   => Ok(Type::Float),
             (Type::Float , Type::Float) => Ok(Type::Float),
+            (_, _) => Err(Error::UnexpectedType {
+                pos: *pos,
+                expected: Type::Int,
+                actual: Type::Float
+            })
         }
     }
 }

@@ -12,6 +12,7 @@ pub enum Error {
 
     // Scanner errors
     IllegalCharacter(Pos, char),
+    UnterminatedString(Pos),
 
     // Parser errors
     UnexpectedToken(Token, Vec<TokenType>), // Token contains position
@@ -32,6 +33,10 @@ impl Display for Error {
 
             Error::IllegalCharacter(pos, c) => {
                 write!(f, "{}: Illegal character: '{}'", pos, c)
+            }
+
+            Error::UnterminatedString(pos) => {
+                write!(f, "{}: unterminated string literal", pos)
             }
 
             Error::UnexpectedToken(ref tok, ref choices) => {

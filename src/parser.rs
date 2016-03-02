@@ -71,6 +71,9 @@ impl Parser {
         } else if self.peek(TokenType::TypeFloat) {
             self.index += 1;
             Ok(Type::Float)
+        } else if self.peek(TokenType::TypeString) {
+            self.index += 1;
+            Ok(Type::String)
         } else {
             Err(Error::UnexpectedToken(self.curr_token(), vec![TokenType::TypeInt, TokenType::TypeFloat]))
         }
@@ -262,6 +265,8 @@ impl Parser {
             self.parse_int()
         } else if self.peek(TokenType::Float) {
             self.parse_float()
+        } else if self.peek(TokenType::String) {
+            self.parse_string()
         } else if self.peek(TokenType::Id) {
             self.parse_id()
         } else if self.peek(TokenType::LParen) {
@@ -315,6 +320,18 @@ impl Parser {
             }),
             Err(_) => Err(Error::InvalidFloatLiteral(pos, lexeme))
         }
+    }
+
+    fn parse_string(&mut self) -> Result<Expr, Error> {
+        let pos = self.token_pos();
+        let lexeme = try!(self.eat_lexeme(TokenType::String));
+        Ok(Expr {
+            pos: pos,
+            node_id: self.next_id(),
+            expr: Expr_::String(ExprString {
+                value: lexeme
+            })
+        })
     }
 
     fn parse_id(&mut self) -> Result<Expr, Error> {

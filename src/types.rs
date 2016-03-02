@@ -4,6 +4,7 @@ use std::fmt;
 pub enum Type {
     Int,
     Float,
+    String,
 }
 
 impl fmt::Display for Type {
@@ -11,15 +12,7 @@ impl fmt::Display for Type {
         match *self {
             Type::Int => write!(f, "int"),
             Type::Float => write!(f, "float"),
-        }
-    }
-}
-
-impl Type {
-    pub fn format_letter(&self) -> char {
-        match *self {
-            Type::Int => 'd',
-            Type::Float => 'f',
+            Type::String => write!(f, "string"),
         }
     }
 }
