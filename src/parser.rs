@@ -64,21 +64,6 @@ impl Parser {
         }
     }
 
-    fn eat_type(&mut self) -> Result<Type, Error> {
-        if self.peek(TokenType::TypeInt) {
-            self.index += 1;
-            Ok(Type::Int)
-        } else if self.peek(TokenType::TypeFloat) {
-            self.index += 1;
-            Ok(Type::Float)
-        } else if self.peek(TokenType::TypeString) {
-            self.index += 1;
-            Ok(Type::String)
-        } else {
-            Err(Error::UnexpectedToken(self.curr_token(), vec![TokenType::TypeInt, TokenType::TypeFloat]))
-        }
-    }
-
     pub fn parse_program(&mut self) -> Result<Program, Error> {
         let decls = try!(self.parse_decls());
         let stmts = try!(self.parse_stmts());
@@ -88,6 +73,21 @@ impl Parser {
             decls: decls,
             stmts: stmts,
         })
+    }
+
+    fn parse_type(&mut self) -> Result<Type, Error> {
+        if self.peek(TokenType::TypeInt) {
+            let _ = try!(self.eat(TokenType::TypeInt));
+            Ok(Type::Int)
+        } else if self.peek(TokenType::TypeFloat) {
+            let _ = try!(self.eat(TokenType::TypeFloat));
+            Ok(Type::Float)
+        } else if self.peek(TokenType::TypeString) {
+            let _ = try!(self.eat(TokenType::TypeString));
+            Ok(Type::String)
+        } else {
+            Err(Error::UnexpectedToken(self.curr_token(), vec![TokenType::TypeInt, TokenType::TypeFloat]))
+        }
     }
 
     fn parse_decls(&mut self) -> Result<Vec<Decl>, Error> {
@@ -104,7 +104,7 @@ impl Parser {
         try!(self.eat(TokenType::Var));
         let id = try!(self.eat_lexeme(TokenType::Id));
         try!(self.eat(TokenType::Colon));
-        let ty = try!(self.eat_type());
+        let ty = try!(self.parse_type());
         try!(self.eat(TokenType::Semicolon));
         Ok(Decl { pos: pos, id: id, ty: ty })
     }
