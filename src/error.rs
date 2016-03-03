@@ -1,14 +1,15 @@
 use std::fmt;
 use std::fmt::Display;
 
+use ast;
 use pos::Pos;
 use token::{Token, TokenType};
 use types::Type;
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum Error {
     GenericError,
-    UsageError,
 
     // Scanner errors
     IllegalCharacter(Pos, char),
@@ -21,6 +22,7 @@ pub enum Error {
 
     // Typechecking errors
     UnexpectedType { pos: Pos, expected: Type, actual: Type },
+    IllTypedBinop { pos: Pos, op: ast::Binop, lhs: Type, rhs: Type },
     DuplicateVariable(Pos, String),
     UndeclaredVariable(Pos, String),
 }
@@ -29,7 +31,6 @@ impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Error::GenericError => { write!(f, "Generic Error") }
-            Error::UsageError => { write!(f, "Usage Error") }
 
             Error::IllegalCharacter(pos, c) => {
                 write!(f, "{}: Illegal character: '{}'", pos, c)
@@ -58,6 +59,10 @@ impl Display for Error {
 
             Error::UnexpectedType { pos, expected, actual } =>
                 write!(f, "{}: Unexpected type. Found: {}. Expected: {}.", pos, actual, expected),
+
+            Error::IllTypedBinop { pos, op, lhs, rhs } =>
+                write!(f, "{}: Operation '{}' not supported between {} and {}", pos, op, lhs, rhs),
+
             Error::DuplicateVariable(pos, ref id) =>
                 write!(f, "{}: Duplicate variable declaration: {}", pos, id),
             Error::UndeclaredVariable(pos, ref id) =>

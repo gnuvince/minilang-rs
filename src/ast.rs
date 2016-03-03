@@ -1,3 +1,5 @@
+use std::fmt;
+
 use types::Type;
 use pos::Pos;
 
@@ -51,13 +53,25 @@ pub enum Stmt {
     While(StmtWhile),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum Binop {
     Add,
     Sub,
     Mul,
     Div,
 }
+
+impl fmt::Display for Binop {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Binop::Add => write!(f, "+"),
+            Binop::Sub => write!(f, "-"),
+            Binop::Mul => write!(f, "*"),
+            Binop::Div => write!(f, "/"),
+        }
+    }
+}
+
 
 #[derive(Debug)]
 pub struct ExprId {

@@ -59,6 +59,13 @@ impl TypeChecker {
         }
     }
 
+    /*
+     * Statement compatibility rules:
+     * int := int
+     * float := float
+     * float := int
+     * string := string
+     */
     fn tc_stmt_assign(&mut self, stmt: &StmtAssign) -> Result<(), Error> {
         let expr_ty = try!(self.tc_expr(&stmt.expr));
         match self.symtable.get(&stmt.id) {
@@ -138,15 +145,18 @@ impl TypeChecker {
         let t1 = try!(self.tc_expr(&expr.expr1));
         let t2 = try!(self.tc_expr(&expr.expr2));
 
-        match (t1, t2) {
-            (Type::Int   , Type::Int)   => Ok(Type::Int),
-            (Type::Int   , Type::Float) => Ok(Type::Float),
-            (Type::Float , Type::Int)   => Ok(Type::Float),
-            (Type::Float , Type::Float) => Ok(Type::Float),
-            (_, _) => Err(Error::UnexpectedType {
+        match (expr.op, t1, t2) {
+            (_, Type::Int, Type::Int) => Ok(Type::Int),
+            (_, Type::Int, Type::Float) => Ok(Type::Float),
+            (_, Type::Float, Type::Int) => Ok(Type::Float),
+            (_, Type::Float, Type::Float) => Ok(Type::Float),
+            (Binop::Add, Type::String, Type::String) => Ok(Type::String),
+            (Binop::Sub, Type::String, Type::String) => Ok(Type::String),
+            (op, t1, t2) => Err(Error::IllTypedBinop {
                 pos: *pos,
-                expected: Type::Int,
-                actual: Type::Float
+                op: op,
+                lhs: t1,
+                rhs: t2
             })
         }
     }

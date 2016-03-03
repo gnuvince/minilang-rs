@@ -52,7 +52,7 @@ impl CompileManager {
     fn get_tokens(&self) -> Result<Vec<Token>, Error> {
         let mut stdin = stdin();
         let mut buf = String::new();
-        stdin.read_to_string(&mut buf);
+        let _ = stdin.read_to_string(&mut buf);
         let mut scanner = Scanner::new(&buf);
 
         let mut tokens = Vec::new();
