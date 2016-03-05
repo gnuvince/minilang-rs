@@ -26,9 +26,8 @@ impl Parser {
         x
     }
 
-    fn peek(&self, t: TokenType) -> bool {
-        let token = &self.tokens[self.index];
-        token.typ == t
+    fn peek(&self) -> TokenType {
+        self.tokens[self.index].typ
     }
 
     fn curr_token(&self) -> Token {
@@ -40,8 +39,7 @@ impl Parser {
     }
 
     fn eat(&mut self, t: TokenType) -> Result<(), Error> {
-        let b = self.peek(t);
-        if b {
+        if self.peek() == t {
             self.index += 1;
             Ok(())
         } else {
@@ -76,23 +74,32 @@ impl Parser {
     }
 
     fn parse_type(&mut self) -> Result<Type, Error> {
-        if self.peek(TokenType::TypeInt) {
-            let _ = try!(self.eat(TokenType::TypeInt));
-            Ok(Type::Int)
-        } else if self.peek(TokenType::TypeFloat) {
-            let _ = try!(self.eat(TokenType::TypeFloat));
-            Ok(Type::Float)
-        } else if self.peek(TokenType::TypeString) {
-            let _ = try!(self.eat(TokenType::TypeString));
-            Ok(Type::String)
-        } else {
-            Err(Error::UnexpectedToken(self.curr_token(), vec![TokenType::TypeInt, TokenType::TypeFloat]))
+        match self.peek() {
+            TokenType::TypeInt => {
+                let _ = try!(self.eat(TokenType::TypeInt));
+                Ok(Type::Int)
+            }
+            TokenType::TypeFloat => {
+                let _ = try!(self.eat(TokenType::TypeFloat));
+                Ok(Type::Float)
+            }
+            TokenType::TypeString => {
+                let _ = try!(self.eat(TokenType::TypeString));
+                Ok(Type::String)
+            }
+            _ => {
+                Err(Error::UnexpectedToken(self.curr_token(),
+                                           vec![TokenType::TypeInt,
+                                                TokenType::TypeFloat,
+                                                TokenType::TypeString
+                                           ]))
+            }
         }
     }
 
     fn parse_decls(&mut self) -> Result<Vec<Decl>, Error> {
         let mut decls: Vec<Decl> = Vec::new();
-        while self.peek(TokenType::Var) {
+        while self.peek() == TokenType::Var {
             let decl = try!(self.parse_decl());
             decls.push(decl);
         }
@@ -120,21 +127,18 @@ impl Parser {
     }
 
     fn parse_stmt(&mut self) -> Result<Stmt, Error> {
-        if self.peek(TokenType::Read) {
-            self.parse_read()
-        } else if self.peek(TokenType::Print) {
-            self.parse_print()
-        } else if self.peek(TokenType::Id) {
-            self.parse_assign()
-        } else if self.peek(TokenType::If) {
-            self.parse_if()
-        } else if self.peek(TokenType::While) {
-            self.parse_while()
-        } else {
-            Err(Error::UnexpectedToken(
-                self.curr_token(),
-                vec![TokenType::Read, TokenType::Print,
-                     TokenType::Id, TokenType::If, TokenType::While]))
+        match self.peek() {
+            TokenType::Read => { self.parse_read() }
+            TokenType::Print => { self.parse_print() }
+            TokenType::Id => { self.parse_assign() }
+            TokenType::If => { self.parse_if() }
+            TokenType::While => { self.parse_while() }
+            _ => {
+                Err(Error::UnexpectedToken(
+                    self.curr_token(),
+                    vec![TokenType::Read, TokenType::Print,
+                         TokenType::Id, TokenType::If, TokenType::While]))
+            }
         }
     }
 
@@ -171,7 +175,7 @@ impl Parser {
         let then_stmts = try!(self.parse_stmts());
 
         let else_stmts =
-            if self.peek(TokenType::Else) {
+            if self.peek() == TokenType::Else {
                 try!(self.eat(TokenType::Else));
                 try!(self.parse_stmts())
             } else {
@@ -205,15 +209,16 @@ impl Parser {
         let pos = self.token_pos();
         let mut term = try!(self.parse_term());
         while self.next_is_add() {
-            let (tok, op) =
-                if self.peek(TokenType::Plus) {
-                    (TokenType::Plus, Binop::Add)
-                } else if self.peek(TokenType::Minus) {
-                    (TokenType::Minus, Binop::Sub)
-                } else {
-                    return Err(Error::UnexpectedToken(
-                        self.curr_token(),
-                        vec![TokenType::Plus, TokenType::Minus]));
+            let tok = self.peek();
+            let op =
+                match tok {
+                    TokenType::Plus => Binop::Add,
+                    TokenType::Minus => Binop::Sub,
+                    _ => {
+                        return Err(Error::UnexpectedToken(
+                            self.curr_token(),
+                            vec![TokenType::Plus, TokenType::Minus]));
+                    }
                 };
             try!(self.eat(tok));
             let t2 = try!(self.parse_term());
@@ -234,15 +239,16 @@ impl Parser {
         let pos = self.token_pos();
         let mut fact = try!(self.parse_factor());
         while self.next_is_mul() {
-            let (tok, op) =
-                if self.peek(TokenType::Star) {
-                    (TokenType::Star, Binop::Mul)
-                } else if self.peek(TokenType::Slash) {
-                    (TokenType::Slash, Binop::Div)
-                } else {
-                    return Err(Error::UnexpectedToken(
-                        self.curr_token(),
-                        vec![TokenType::Star, TokenType::Slash]));
+            let tok = self.peek();
+            let op =
+                match tok {
+                    TokenType::Star => Binop::Mul,
+                    TokenType::Slash => Binop::Div,
+                    _ => {
+                        return Err(Error::UnexpectedToken(
+                            self.curr_token(),
+                            vec![TokenType::Star, TokenType::Slash]));
+                    }
                 };
             try!(self.eat(tok));
             let f2 = try!(self.parse_factor());
@@ -261,34 +267,34 @@ impl Parser {
 
     fn parse_factor(&mut self) -> Result<Expr, Error> {
         let pos = self.token_pos();
-        if self.peek(TokenType::Int) {
-            self.parse_int()
-        } else if self.peek(TokenType::Float) {
-            self.parse_float()
-        } else if self.peek(TokenType::String) {
-            self.parse_string()
-        } else if self.peek(TokenType::Id) {
-            self.parse_id()
-        } else if self.peek(TokenType::LParen) {
-            try!(self.eat(TokenType::LParen));
-            let e = try!(self.parse_expr());
-            try!(self.eat(TokenType::RParen));
-            Ok(e)
-        } else if self.peek(TokenType::Minus) {
-            try!(self.eat(TokenType::Minus));
-            let e = try!(self.parse_expr());
-            Ok(Expr {
-                pos: pos,
-                node_id: self.next_id(),
-                expr: Expr_::Negate(ExprNegate {
-                    expr: Box::new(e)
+        match self.peek() {
+            TokenType::Int => { self.parse_int() }
+            TokenType::Float => { self.parse_float() }
+            TokenType::String => { self.parse_string() }
+            TokenType::Id => { self.parse_id() }
+            TokenType::LParen => {
+                try!(self.eat(TokenType::LParen));
+                let e = try!(self.parse_expr());
+                try!(self.eat(TokenType::RParen));
+                Ok(e)
+            }
+            TokenType::Minus => {
+                try!(self.eat(TokenType::Minus));
+                let e = try!(self.parse_expr());
+                Ok(Expr {
+                    pos: pos,
+                    node_id: self.next_id(),
+                    expr: Expr_::Negate(ExprNegate {
+                        expr: Box::new(e)
+                    })
                 })
-            })
-        } else {
-            Err(Error::UnexpectedToken(
-                self.curr_token(),
-                vec![TokenType::Int, TokenType::Float, TokenType::Id,
-                     TokenType::Minus, TokenType::LParen]))
+            }
+            _ => {
+                Err(Error::UnexpectedToken(
+                    self.curr_token(),
+                    vec![TokenType::Int, TokenType::Float, TokenType::Id,
+                         TokenType::Minus, TokenType::LParen]))
+            }
         }
     }
 
@@ -347,18 +353,18 @@ impl Parser {
     }
 
     fn is_stmt_start(&self) -> bool {
-        self.peek(TokenType::Id) ||
-            self.peek(TokenType::If) ||
-            self.peek(TokenType::While) ||
-            self.peek(TokenType::Read) ||
-            self.peek(TokenType::Print)
+        self.peek() == TokenType::Id
+            || self.peek() == TokenType::If
+            || self.peek() == TokenType::While
+            || self.peek() == TokenType::Read
+            || self.peek() == TokenType::Print
     }
 
     fn next_is_add(&self) -> bool {
-        self.peek(TokenType::Plus) || self.peek(TokenType::Minus)
+        self.peek() == TokenType::Plus || self.peek() == TokenType::Minus
     }
 
     fn next_is_mul(&self) -> bool {
-        self.peek(TokenType::Star) || self.peek(TokenType::Slash)
+        self.peek() == TokenType::Star || self.peek() == TokenType::Slash
     }
 }
